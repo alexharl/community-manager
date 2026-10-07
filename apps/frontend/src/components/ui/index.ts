@@ -2,7 +2,7 @@ export { Button, ButtonLink, type ButtonProps, type ButtonVariant } from './Butt
 export { Card } from './Card';
 export { ConfirmDialog } from './ConfirmDialog';
 export { EmptyState } from './EmptyState';
-export { Field, type FieldControlProps } from './Field';
+export { Field, type FieldControlProps, type FieldMessageProps } from './Field';
 export { IconButton } from './IconButton';
 export { List, ListItem } from './ListItem';
 export { LoadingState } from './LoadingState';

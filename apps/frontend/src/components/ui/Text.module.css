@@ -25,3 +25,7 @@
 .md {
   font-size: var(--font-size);
 }
+
+.strong {
+  font-weight: 600;
+}

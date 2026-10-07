@@ -9,21 +9,29 @@ export interface FieldControlProps {
   'aria-describedby': string | undefined;
 }
 
-interface FieldProps {
-  id?: string;
+/** Beschriftung und Meldungen, die alle Eingabekomponenten gleich anbieten. */
+export interface FieldMessageProps {
   label?: ReactNode;
   hint?: ReactNode;
+  /** Eingabefehler (rot, markiert das Feld als ungültig). */
   error?: ReactNode;
+  /** Hinweis auf einen Zustand, der Aufmerksamkeit braucht, aber kein Eingabefehler ist. */
+  warning?: ReactNode;
+}
+
+interface FieldProps extends FieldMessageProps {
+  id?: string;
   className?: string;
   children: (control: FieldControlProps) => ReactNode;
 }
 
-/** Gemeinsamer Rahmen für Eingaben: Label, Hinweis bzw. Fehlermeldung und ARIA-Verknüpfung. */
-export function Field({ id, label, hint, error, className, children }: FieldProps) {
+/** Gemeinsamer Rahmen für Eingaben: Label, Meldung (Fehler > Warnung > Hinweis) und ARIA-Verknüpfung. */
+export function Field({ id, label, hint, error, warning, className, children }: FieldProps) {
   const autoId = useId();
   const controlId = id ?? autoId;
-  const message = error || hint;
+  const message = error || warning || hint;
   const messageId = `${controlId}-message`;
+  const messageClass = error ? styles.error : warning ? styles.warning : styles.hint;
 
   return (
     <div className={cx(styles.field, className)}>
@@ -38,7 +46,7 @@ export function Field({ id, label, hint, error, className, children }: FieldProp
         'aria-describedby': message ? messageId : undefined,
       })}
       {message && (
-        <p id={messageId} className={error ? styles.error : styles.hint}>
+        <p id={messageId} className={messageClass}>
           {message}
         </p>
       )}

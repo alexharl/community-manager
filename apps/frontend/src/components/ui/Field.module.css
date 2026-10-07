@@ -12,12 +12,17 @@
 }
 
 .hint,
+.warning,
 .error {
   font-size: var(--font-size-sm);
 }
 
 .hint {
   color: var(--color-text-muted);
+}
+
+.warning {
+  color: var(--color-warning);
 }
 
 .error {

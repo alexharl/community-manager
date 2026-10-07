@@ -1,0 +1,10 @@
+.mail {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.mail svg {
+  width: 14px;
+  height: 14px;
+}

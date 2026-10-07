@@ -10,6 +10,8 @@ import { errorBody, errorHandler } from './lib/errors';
 import { healthRoutes } from './modules/health/routes';
 import { mailAccountRoutes } from './modules/mail-accounts/routes';
 import { settingsRoutes } from './modules/settings/routes';
+import { tagRoutes } from './modules/tags/routes';
+import { templateRoutes } from './modules/templates/routes';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -41,6 +43,8 @@ export async function buildApp(config: Config, db: Db): Promise<FastifyInstance>
       await api.register(healthRoutes);
       await api.register(settingsRoutes);
       await api.register(mailAccountRoutes);
+      await api.register(templateRoutes);
+      await api.register(tagRoutes);
     },
     { prefix: '/api' },
   );
