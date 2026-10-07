@@ -1095,7 +1095,8 @@ Vorlagen bekommen einen eigenen Inhalt (DOCX), der beim Anlegen eines Dokuments 
 | **S5** | Je Veranstaltung ein eigener Aufzählungspunkt mit eigenen Unterpunkten. Ohne Veranstaltung erscheint ein leerer Punkt mit Unterpunkten (Filter `oderLeer`). |
 | **S6** | Datumsformat der Tage: `TT.MM` (`{datum}:` → „07.10:“). |
 | **S7** | Veranstaltungen kommen aus einer **austauschbaren Datenquelle** (Schnittstelle `EventSource`). Erste Umsetzung: WordPress-Plugin „WP FullCalendar“ des Kunstvereins Nürnberg. |
-| **S8** | Hinter dem Veranstaltungstitel steht ein echter Link „Webseite“. Umgesetzt durch eigene Nachbearbeitung der DOCX, weil das Link-Modul von docxtemplater kostenpflichtig ist. |
+| **S8** | Hinter dem Veranstaltungstitel steht ein echter Link „Webseite“. Umgesetzt durch eigene Nachbearbeitung der DOCX, weil das Link-Modul von docxtemplater kostenpflichtig ist. Das funktioniert auch, wenn Zeilen per Zeilenumbruch (Umschalt+Enter) statt als eigene Absätze angelegt sind. |
+| **S9** | Der Rückblick zeigt nur Tage mit Veranstaltungen (Filter `mitVeranstaltungen`); Tage ohne Veranstaltung entfallen samt Überschrift. Der Vorblick zeigt alle Tage, leere mit Unterpunkten (S5). |
 
 ### 14.2 Platzhalter-Sprache
 
@@ -1105,6 +1106,7 @@ Vorlagen bekommen einen eigenen Inhalt (DOCX), der beim Anlegen eines Dokuments 
 | `{#liste}` … `{/}` | Für jeden Eintrag wiederholen. Stehen die Tags allein in einem Absatz, verschwindet dieser Absatz im Ergebnis. Statt `{/}` geht auch der exakte Ausdruck (`{/liste}`). |
 | `{^liste}` … `{/}` | Nur, wenn die Liste leer ist. |
 | `liste \| oderLeer` | Die Liste – oder, wenn sie leer ist, ein einzelner leerer Eintrag. |
+| `tage(…) \| mitVeranstaltungen` | Nur die Tage, an denen Veranstaltungen stattfinden. |
 
 **Daten beim Anlegen:**
 
@@ -1119,15 +1121,15 @@ Vorlagen bekommen einen eigenen Inhalt (DOCX), der beim Anlegen eines Dokuments 
 Je Tag: `wochentag`, `datum`, `datumLang`, `veranstaltungen`.
 Je Veranstaltung: `titel`, `uhrzeit` (z. B. „20:00“, leer bei ganztägigen), `webseite` (Link „Webseite“, leer ohne URL).
 
-**Datumsabhängig** (→ Datumsfeld, S3) ist eine Vorlage, sobald ein Platzhalter `tage`, `datum`, `datumLang` oder `wochentag` verwendet.
+**Datumsabhängig** (→ Datumsfeld, S3) ist eine Vorlage, sobald ein Platzhalter `tage`, `datum`, `datumLang` oder `wochentag` verwendet. Aufgerufene Funktionen wie `tage(…)` zählen mit; Filternamen sind keine Datenfelder.
 
 **Beispiel Protokoll** (so im Editor gestaltet; in Klammern das Absatzformat):
 
 ```
 Rückblick                                   (Überschrift 2)
-{#tage(-6, -1)}
+{#tage(-6, -1) | mitVeranstaltungen}
 {wochentag} {datum}:                        (Überschrift 3)
-{#veranstaltungen | oderLeer}
+{#veranstaltungen}
 • {titel} {webseite}                        (Aufzählung, Ebene 1)
     ◦ AV:                                   (Aufzählung, Ebene 2)
     ◦ Mischer:
@@ -1136,7 +1138,13 @@ Rückblick                                   (Überschrift 2)
 {/}
 Vorblick                                    (Überschrift 2)
 {#tage(0, 7)}
-… gleicher Block …
+{wochentag} {datum}:                        (Überschrift 3)
+{#veranstaltungen | oderLeer}
+• {titel} {webseite}                        (Aufzählung, Ebene 1)
+    ◦ AV:                                   (Aufzählung, Ebene 2)
+    ◦ Mischer:
+    ◦ Theke:
+{/}
 {/}
 ```
 

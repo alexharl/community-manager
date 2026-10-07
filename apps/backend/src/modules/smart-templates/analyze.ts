@@ -12,6 +12,48 @@ export interface TemplateAnalysis {
   error: string | null;
 }
 
+interface AstNode {
+  type?: string;
+  name?: string;
+  computed?: boolean;
+  [key: string]: unknown;
+}
+
+// Abgeleitete Hilfsdaten des Parsers, die dieselben Knoten noch einmal enthalten
+const SKIPPED_KEYS = new Set(['type', 'toWatch', 'constant']);
+
+/**
+ * Datenfelder eines Ausdrucks aus dessen Syntaxbaum. Anders als `getIdentifiers()` zählen
+ * aufgerufene Funktionen wie `tage(…)` mit, Filternamen wie `| oderLeer` dagegen nicht.
+ */
+function collectFields(node: unknown, fields: Set<string>): void {
+  if (Array.isArray(node)) {
+    for (const child of node) collectFields(child, fields);
+    return;
+  }
+  if (!node || typeof node !== 'object') return;
+  const ast = node as AstNode;
+  switch (ast.type) {
+    case 'Identifier':
+      if (ast.name) fields.add(ast.name);
+      return;
+    case 'FilterExpression':
+      collectFields(ast.arguments, fields);
+      return;
+    case 'MemberExpression':
+      collectFields(ast.object, fields);
+      if (ast.computed) collectFields(ast.property, fields);
+      return;
+    case 'Property':
+      if (ast.computed) collectFields(ast.key, fields);
+      collectFields(ast.value, fields);
+      return;
+  }
+  for (const [key, value] of Object.entries(ast)) {
+    if (!SKIPPED_KEYS.has(key)) collectFields(value, fields);
+  }
+}
+
 /**
  * Liest eine Vorlage ein, ohne sie zu befüllen (Kap. 14.4, Schritt 3). docxtemplater ruft den
  * Parser für jedes Tag auf – darüber werden Platzhalter und verwendete Felder gesammelt.
@@ -26,7 +68,7 @@ export function analyzeTemplate(buffer: Buffer): TemplateAnalysis {
       parser: (tag) => {
         const parsed = templateParser(tag);
         if (tag.trim()) placeholders.add(tag.trim());
-        for (const identifier of parsed.getIdentifiers()) identifiers.add(identifier);
+        collectFields((parsed as { compiled?: { ast?: unknown } }).compiled?.ast, identifiers);
         return parsed;
       },
     });

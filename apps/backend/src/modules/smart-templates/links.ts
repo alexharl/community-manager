@@ -6,6 +6,10 @@ const MARKER_PATTERN = new RegExp(`${MARK}L(\\d+)${MARK}`, 'g');
 const RELATIONSHIP_TYPE =
   'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink';
 
+// Formatierung am Anfang eines Laufs; endet am ersten </w:rPr>, greift also nie in den nächsten Lauf
+const RUN_PROPERTIES = /^<w:rPr>(?:(?!<\/w:rPr>)[\s\S])*<\/w:rPr>/;
+const EMPTY_RUN = /<w:r(?:\s[^>]*)?>(?:<w:rPr>(?:(?!<\/w:rPr>)[\s\S])*<\/w:rPr>)?<\/w:r>/g;
+
 const escapeXml = (text: string) =>
   text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -34,31 +38,37 @@ export class LinkRegistry {
     let rels = zip.file(relsPath)?.asText() ?? '';
     const used = new Set<number>();
 
-    // Jeden Lauf (<w:r>) mit Platzhalter in Text-Läufe und Hyperlinks aufteilen
-    xml = xml.replace(/<w:r(?:\s[^>]*)?>([\s\S]*?)<\/w:r>/g, (run, inner: string) => {
-      if (!inner.includes(MARK)) return run;
-      const texts = [...inner.matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g)];
-      // Nur einfache Läufe (Formatierung + ein Text) aufteilen; Sonderfälle unten als Klartext
-      if (texts.length !== 1 || /<w:(?:tab|br|drawing|fldChar)\b/.test(inner)) return run;
-      const rPr = inner.match(/<w:rPr>[\s\S]*?<\/w:rPr>/)?.[0] ?? '';
-      const keep = (name: string) => rPr.match(new RegExp(`<w:${name}\\b[^>]*/>`))?.[0] ?? '';
-      const linkRPr = `<w:rPr><w:rStyle w:val="Hyperlink"/>${keep('rFonts')}<w:color w:val="0563C1"/>${keep('sz')}${keep('szCs')}<w:u w:val="single"/></w:rPr>`;
+    // Lauf (<w:r>) an jedem Platzhalter schließen, Hyperlink einfügen und mit gleicher Formatierung
+    // fortsetzen – übrige Inhalte wie Zeilenumbrüche oder Tabulatoren bleiben an ihrer Stelle
+    xml = xml.replace(
+      /(<w:r(?:\s[^>]*)?>)([\s\S]*?)<\/w:r>/g,
+      (run, open: string, inner: string) => {
+        if (!inner.includes(MARK)) return run;
+        const rPr = inner.match(RUN_PROPERTIES)?.[0] ?? '';
+        const keep = (name: string) => rPr.match(new RegExp(`<w:${name}\\b[^>]*/>`))?.[0] ?? '';
+        const linkRPr = `<w:rPr><w:rStyle w:val="Hyperlink"/>${keep('rFonts')}<w:color w:val="0563C1"/>${keep('sz')}${keep('szCs')}<w:u w:val="single"/></w:rPr>`;
 
-      return texts[0]![1]!
-        .split(MARKER_PATTERN)
-        .map((part, index) => {
-          if (index % 2 === 0) {
-            return part ? `<w:r>${rPr}<w:t xml:space="preserve">${part}</w:t></w:r>` : '';
-          }
-          const link = this.links[Number(part)];
-          if (!link) return '';
-          used.add(Number(part));
-          return `<w:hyperlink r:id="rIdCmLink${part}" w:history="1"><w:r>${linkRPr}<w:t xml:space="preserve">${escapeXml(link.text)}</w:t></w:r></w:hyperlink>`;
-        })
-        .join('');
-    });
+        const body = inner
+          .slice(rPr.length)
+          .replace(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g, (textElement, text: string) => {
+            if (!text.includes(MARK)) return textElement;
+            return text
+              .split(MARKER_PATTERN)
+              .map((part, index) => {
+                if (index % 2 === 0) return part ? `<w:t xml:space="preserve">${part}</w:t>` : '';
+                const link = this.links[Number(part)];
+                if (!link) return '';
+                used.add(Number(part));
+                return `</w:r><w:hyperlink r:id="rIdCmLink${part}" w:history="1"><w:r>${linkRPr}<w:t xml:space="preserve">${escapeXml(link.text)}</w:t></w:r></w:hyperlink><w:r>${rPr}`;
+              })
+              .join('');
+          });
+        // Leere Läufe entstehen, wenn der Link am Anfang oder Ende stand
+        return `${open}${rPr}${body}</w:r>`.replace(EMPTY_RUN, '');
+      },
+    );
 
-    // Übrige Platzhalter (z. B. in Läufen mit Tabulator) als Klartext einsetzen
+    // Sicherheitsnetz: Platzhalter außerhalb eines Textelements als Klartext einsetzen
     xml = xml.replace(MARKER_PATTERN, (_match, index: string) =>
       escapeXml(this.links[Number(index)]?.text ?? ''),
     );

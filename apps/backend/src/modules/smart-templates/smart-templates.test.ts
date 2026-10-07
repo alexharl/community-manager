@@ -54,6 +54,20 @@ describe('analyzeTemplate', () => {
     );
   });
 
+  it('kennt den Filter „mitVeranstaltungen“', () => {
+    const result = analyzeTemplate(buildDocx(['{#tage(-6, -1) | mitVeranstaltungen}', '{/}']));
+    expect(result.error).toBeNull();
+    expect(result.requiresDate).toBe(true);
+  });
+
+  it('erkennt tage() auch ohne weitere Datumsfelder; Tippfehler im Funktionsnamen werden gemeldet', () => {
+    const onlyDays = analyzeTemplate(buildDocx(['{#tage(0, 7)}{#veranstaltungen}{titel}{/}{/}']));
+    expect(onlyDays).toMatchObject({ requiresDate: true, error: null });
+    expect(analyzeTemplate(buildDocx(['{#tagee(0, 7)}', '{/}'])).error).toBe(
+      'Unbekannte Platzhalter: „tagee“ – sie bleiben leer.',
+    );
+  });
+
   it('braucht ohne Datumsfelder kein Sitzungsdatum', () => {
     expect(analyzeTemplate(buildDocx(['Protokoll {verein}'])).requiresDate).toBe(false);
   });
@@ -121,6 +135,32 @@ describe('renderTemplate', () => {
     expect(xml).not.toContain('⁣');
     expect(xml).toContain('xmlns:r=');
     expect(rels).toContain('Target="https://example.org/vultures" TargetMode="External"');
+  });
+
+  it('Rückblick mit „mitVeranstaltungen“: Tage ohne Veranstaltung entfallen ganz', async () => {
+    const { data, links } = setup();
+    const template = protocol('-6, -1');
+    template[0] = '{#tage(-6, -1) | mitVeranstaltungen}';
+    const texts = paragraphTexts(await renderTemplate(buildDocx(template), data, links));
+    expect(texts).toEqual(['Freitag 02.10:', '• Vultures Webseite', '◦ AV:']);
+  });
+
+  it('setzt Links auch in Läufen mit Zeilenumbruch und Tabulator (Vorlage als ein Absatz)', async () => {
+    const { data, links } = setup();
+    // So legt ONLYOFFICE Zeilen mit Umschalt+Enter an: ein Absatz, Umbrüche im selben Lauf
+    const paragraph =
+      '<w:p><w:r><w:t xml:space="preserve">{#tage(-5, -5)}</w:t><w:br/></w:r>' +
+      '<w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">{wochentag}:</w:t></w:r>' +
+      '<w:r><w:tab/><w:t xml:space="preserve">{#veranstaltungen}{titel} {webseite}</w:t><w:br/><w:t xml:space="preserve">AV:</w:t></w:r>' +
+      '<w:r><w:t xml:space="preserve">{/}{/}</w:t></w:r></w:p>';
+    const xml = new PizZip(await renderTemplate(buildDocx([paragraph]), data, links))
+      .file('word/document.xml')!
+      .asText();
+    expect(xml).toContain(
+      '<w:r><w:tab/><w:t xml:space="preserve">Vultures </w:t></w:r><w:hyperlink r:id="rIdCmLink0" w:history="1">',
+    );
+    expect(xml).toContain('</w:hyperlink><w:r><w:br/><w:t xml:space="preserve">AV:</w:t></w:r>');
+    expect(xml).not.toContain('⁣');
   });
 
   it('erstellt das Dokument auch, wenn die Veranstaltungen nicht erreichbar sind', async () => {

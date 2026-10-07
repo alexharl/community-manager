@@ -2,9 +2,9 @@ import { CircleHelp } from 'lucide-react';
 import styles from './TemplateContentSection.module.css';
 
 const PROTOCOL_EXAMPLE = `Rückblick            ← Überschrift 2
-{#tage(-6, -1)}
+{#tage(-6, -1) | mitVeranstaltungen}
 {wochentag} {datum}: ← Überschrift 3
-{#veranstaltungen | oderLeer}
+{#veranstaltungen}
   • {titel} {webseite}
       ◦ AV:
       ◦ Mischer:
@@ -13,7 +13,13 @@ const PROTOCOL_EXAMPLE = `Rückblick            ← Überschrift 2
 {/}
 Vorblick             ← Überschrift 2
 {#tage(0, 7)}
-  … wie beim Rückblick …
+{wochentag} {datum}: ← Überschrift 3
+{#veranstaltungen | oderLeer}
+  • {titel} {webseite}
+      ◦ AV:
+      ◦ Mischer:
+      ◦ Theke:
+{/}
 {/}`;
 
 /** Aufklappbare Kurzreferenz der Platzhalter-Sprache (Spezifikation Kap. 14.2). */
@@ -29,7 +35,8 @@ export function PlaceholderHelp() {
           Platzhalter stehen in geschweiften Klammern direkt im Text und werden beim Anlegen eines
           Dokuments einmalig befüllt. Zeilen mit <code className={styles.code}>{'{#…}'}</code> und{' '}
           <code className={styles.code}>{'{/}'}</code> stehen allein in einem Absatz und
-          verschwinden dabei.
+          verschwinden dabei. Dafür Zeilen mit Enter trennen – bei Umschalt+Enter (Zeilenumbruch)
+          bleibt an ihrer Stelle eine Leerzeile.
         </p>
 
         <h4>Schreibweise</h4>
@@ -50,6 +57,10 @@ export function PlaceholderHelp() {
             <code className={styles.code}>{'liste | oderLeer'}</code>
           </dt>
           <dd>mindestens ein leerer Eintrag – der Punkt erscheint also immer</dd>
+          <dt>
+            <code className={styles.code}>{'tage(…) | mitVeranstaltungen'}</code>
+          </dt>
+          <dd>nur Tage mit Veranstaltungen – z. B. für den Rückblick</dd>
         </dl>
 
         <h4>Felder</h4>
@@ -89,6 +100,10 @@ export function PlaceholderHelp() {
         </p>
 
         <h4>Beispiel: Protokoll mit Rück- und Vorblick</h4>
+        <p>
+          Der Rückblick zeigt nur Tage, an denen etwas stattfand; der Vorblick jeden Tag – ohne
+          Veranstaltung mit leerem Punkt zum Eintragen.
+        </p>
         <pre className={styles.example}>{PROTOCOL_EXAMPLE}</pre>
       </div>
     </details>
