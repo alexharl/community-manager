@@ -1,0 +1,28 @@
+.logo {
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.placeholder {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  font-weight: 700;
+}
+
+.sm {
+  width: 32px;
+  height: 32px;
+  font-size: var(--font-size-sm);
+}
+
+.lg {
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius);
+  font-size: var(--font-size-2xl);
+}

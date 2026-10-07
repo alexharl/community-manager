@@ -1,0 +1,46 @@
+# Community Manager
+
+Schlankes, selbst gehostetes Verwaltungstool für Vereine. Version 1: Sitzungsprotokolle erstellen (ONLYOFFICE), ablegen, durchsuchen, als PDF abschließen und per Mail versenden.
+
+Die vollständige Spezifikation steht in [docs/SPEZIFIKATION.md](docs/SPEZIFIKATION.md).
+
+> **Sicherheitshinweis:** Es gibt noch keine Anmeldung. Betreibe das System nur in einem vertrauenswürdigen Netz (lokal oder per VPN).
+
+## Voraussetzungen
+
+- Node.js 22 oder neuer
+- Docker (für PostgreSQL und den ONLYOFFICE Document Server)
+
+## Einrichtung
+
+```bash
+cp .env.example .env
+# APP_SECRET und ONLYOFFICE_JWT_SECRET in .env setzen, z. B.:
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+
+npm install
+npm run services:up   # PostgreSQL + ONLYOFFICE (erster Start lädt ca. 4 GB)
+npm run dev           # Backend (Port 3000) + Frontend (Port 5173)
+```
+
+Danach ist die App unter <http://localhost:5173> erreichbar. Das Backend legt die Datenbanktabellen beim Start automatisch an.
+
+## Skripte
+
+| Befehl | Zweck |
+|---|---|
+| `npm run dev` | Backend und Frontend im Entwicklungsmodus |
+| `npm run build` | Produktions-Build von Frontend und Backend |
+| `npm run typecheck` | TypeScript-Prüfung aller Pakete |
+| `npm run lint` | ESLint |
+| `npm run format` | Prettier |
+| `npm run services:up` / `services:down` | Docker-Dienste starten/stoppen |
+
+## Aufbau
+
+```
+apps/backend    Fastify-API (TypeScript), Kysely + PostgreSQL
+apps/frontend   React-SPA (Vite)
+packages/shared Gemeinsame Typen und zod-Schemas
+docs/           Spezifikation
+```
