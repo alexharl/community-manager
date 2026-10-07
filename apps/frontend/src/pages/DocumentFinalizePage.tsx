@@ -9,14 +9,17 @@ import { PageFallback } from '../components/layout/PageFallback';
 import { PageHeader } from '../components/layout/PageHeader';
 import { ButtonLink, Card, SaveStatus, Stack, Text } from '../components/ui';
 import { templateLabel } from '../features/documents/labels';
+import { PdfStatusItem } from '../features/documents/PdfStatusItem';
+import { usePdfStatus } from '../features/documents/usePdfStatus';
 import { useAutosave } from '../hooks/useAutosave';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { formatDateTime } from '../lib/format';
 
-/** Abschlussseite (Kap. 7.4.8). PDF-Erzeugung und Mailversand folgen in Meilenstein 6 und 7. */
+/** Abschlussseite (Kap. 7.4.8). Der Mailversand folgt in Meilenstein 7. */
 export function DocumentFinalizePage() {
   const { id = '' } = useParams();
-  const { data: document, isPending, error } = useDocument(id);
+  // Bei jedem Fensterfokus neu laden: geänderte Version → PDF wird neu erzeugt
+  const { data: document, isPending, error } = useDocument(id, { alwaysFresh: true });
   usePageTitle(document ? `${document.title} abschließen` : 'Dokument');
 
   if (!document) {
@@ -37,6 +40,7 @@ export function DocumentFinalizePage() {
 function FinalizeView({ document }: { document: DocumentDetail }) {
   const update = useUpdateDocument(document.id);
   const autosave = useAutosave((patch: DocumentPatch) => update.mutateAsync(patch));
+  const pdf = usePdfStatus(document);
   // Lokaler Zustand, damit Autosave-Antworten die Eingabe nicht überschreiben
   const [tags, setTags] = useState(document.tags);
 
@@ -74,9 +78,19 @@ function FinalizeView({ document }: { document: DocumentDetail }) {
                 autosave.saveNow({ tags: value });
               }}
             />
-            <Text tone="muted" size="sm">
-              Version {document.version} · zuletzt bearbeitet {formatDateTime(document.editedAt)}
-            </Text>
+            <Stack gap={2}>
+              <Text tone="muted" size="sm">
+                Version {document.version} · zuletzt bearbeitet {formatDateTime(document.editedAt)}
+              </Text>
+              <PdfStatusItem
+                state={pdf.state}
+                pdf={document.pdf}
+                title={document.title}
+                href={pdf.href}
+                error={pdf.error}
+                onRetry={pdf.retry}
+              />
+            </Stack>
           </Stack>
         </Card>
       </PageContent>

@@ -3,10 +3,11 @@ import { DocumentCreateSchema, DocumentPatchSchema } from '@cm/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { DOCX_MIME } from '../../lib/docx';
-import { parse, parseId } from '../../lib/errors';
-import { contentDisposition } from '../../lib/files';
+import { notFound, parse, parseId } from '../../lib/errors';
+import { contentDisposition, fileExists } from '../../lib/files';
 import { buildEditorConfig } from '../onlyoffice/editor-config';
 import { forceSave } from './editing';
+import { ensurePdf } from './pdf';
 import {
   createDocument,
   deleteDocument,
@@ -15,7 +16,7 @@ import {
   listDocuments,
   updateDocument,
 } from './service';
-import { docxPath } from './storage';
+import { docxPath, pdfPath } from './storage';
 
 const ListQuerySchema = z.object({
   q: z.string().trim().max(200).optional(),
@@ -62,6 +63,19 @@ export async function documentRoutes(app: FastifyInstance) {
   });
 
   app.post('/documents/:id/forcesave', (request) => forceSave(app, documentId(request.params)));
+
+  app.post('/documents/:id/pdf', (request) => ensurePdf(app, documentId(request.params)));
+
+  app.get('/documents/:id/pdf', async (request, reply) => {
+    const doc = await getDocumentFiles(app.db, documentId(request.params));
+    const file = pdfPath(dataDir, doc);
+    if (!file || !(await fileExists(file))) throw notFound('PDF');
+    return reply
+      .type('application/pdf')
+      .header('Cache-Control', 'no-cache')
+      .header('Content-Disposition', contentDisposition('inline', `${doc.title}.pdf`))
+      .send(createReadStream(file));
+  });
 
   app.get('/documents/:id/docx', async (request, reply) => {
     const doc = await getDocumentFiles(app.db, documentId(request.params));

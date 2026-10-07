@@ -47,6 +47,49 @@ export function sendCommand(config: OnlyofficeConfig, command: { c: string; key:
   return postToDocumentServer<{ error: number }>(config, '/command', command);
 }
 
+// Fehlercodes der Conversion API
+const CONVERSION_ERRORS: Record<number, string> = {
+  [-1]: 'unbekannter Fehler',
+  [-2]: 'Zeitüberschreitung bei der Konvertierung',
+  [-3]: 'Konvertierungsfehler',
+  [-4]: 'Dokument konnte nicht geladen werden',
+  [-5]: 'Dokument ist passwortgeschützt',
+  [-6]: 'Datenbankfehler im Document Server',
+  [-7]: 'ungültige Anfrage',
+  [-8]: 'Token ungültig',
+};
+
+export function conversionErrorMessage(code: number): string {
+  return `PDF-Erzeugung fehlgeschlagen: ${CONVERSION_ERRORS[code] ?? `Fehler ${code}`}.`;
+}
+
+interface ConvertResponse {
+  endConvert?: boolean;
+  fileUrl?: string;
+  error?: number;
+}
+
+/**
+ * Conversion API (synchron). Der `key` identifiziert den Stand – der DS cacht Ergebnisse je Key.
+ * Liefert die URL der fertigen Datei auf dem Document Server.
+ */
+export async function convertDocument(
+  config: OnlyofficeConfig,
+  params: { key: string; url: string; title: string; filetype: string; outputtype: string },
+): Promise<string> {
+  const result = await postToDocumentServer<ConvertResponse>(config, '/converter', {
+    async: false,
+    ...params,
+  });
+  if (result.error) {
+    throw new AppError(502, 'PDF_CONVERSION_FAILED', conversionErrorMessage(result.error));
+  }
+  if (!result.endConvert || !result.fileUrl) {
+    throw new AppError(504, 'PDF_CONVERSION_TIMEOUT', 'Die PDF-Erzeugung dauert zu lange – bitte erneut versuchen.');
+  }
+  return result.fileUrl;
+}
+
 /** Ersetzt den Host einer DS-URL (z. B. Callback-Download) durch die interne Adresse. */
 export function toInternalUrl(config: OnlyofficeConfig, url: string): string {
   const parsed = new URL(url);

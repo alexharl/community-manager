@@ -5,6 +5,7 @@ import type {
   EditorConfigResponse,
   EditorMode,
   Page,
+  PdfInfo,
 } from '@cm/shared';
 import {
   keepPreviousData,
@@ -53,10 +54,12 @@ export function useDocuments(filter: DocumentFilter) {
   });
 }
 
-export function useDocument(id: string) {
+/** `alwaysFresh`: bei jedem Fensterfokus neu laden, z. B. auf der Abschlussseite (Kap. 7.4.8). */
+export function useDocument(id: string, { alwaysFresh = false }: { alwaysFresh?: boolean } = {}) {
   return useQuery({
     queryKey: documentKeys.detail(id),
     queryFn: () => api<DocumentDetail>(`/documents/${id}`),
+    ...(alwaysFresh ? { staleTime: 0, refetchOnWindowFocus: 'always' as const } : {}),
   });
 }
 
@@ -122,6 +125,22 @@ export function useForceSave(id: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: documentKeys.detail(id) });
       invalidateLists(queryClient);
+    },
+  });
+}
+
+/** Erzeugt die PDF zur aktuellen Version, falls nötig (Kap. 5.4). */
+export function useEnsurePdf(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<PdfInfo>(`/documents/${id}/pdf`, { method: 'POST' }),
+    onSuccess: (pdf) => {
+      const doc = queryClient.getQueryData<DocumentDetail>(documentKeys.detail(id));
+      if (doc && doc.version === pdf.version) {
+        queryClient.setQueryData(documentKeys.detail(id), { ...doc, pdf });
+      } else {
+        void queryClient.invalidateQueries({ queryKey: documentKeys.detail(id) });
+      }
     },
   });
 }
