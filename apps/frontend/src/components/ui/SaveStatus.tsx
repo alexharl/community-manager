@@ -15,7 +15,11 @@ export function SaveStatus({ state, error }: SaveStatusProps) {
 
   return (
     <span
-      className={cx(styles.status, state === 'saved' && styles.saved, state === 'error' && styles.error)}
+      className={cx(
+        styles.status,
+        state === 'saved' && styles.saved,
+        state === 'error' && styles.error,
+      )}
       role="status"
       title={state === 'error' ? (error ?? undefined) : undefined}
     >

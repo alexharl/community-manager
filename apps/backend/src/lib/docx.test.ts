@@ -6,7 +6,8 @@ import { docxContentHash, extractText } from './docx';
 
 async function buildDocx(entries: Record<string, string>, options: { date: Date; level: number }) {
   const zip = new JSZip();
-  for (const [name, content] of Object.entries(entries)) zip.file(name, content, { date: options.date });
+  for (const [name, content] of Object.entries(entries))
+    zip.file(name, content, { date: options.date });
   return zip.generateAsync({
     type: 'nodebuffer',
     compression: 'DEFLATE',
@@ -24,7 +25,10 @@ describe('docxContentHash', () => {
   it('ist unabhängig von ZIP-Zeitstempeln, Kompression und Metadaten', async () => {
     const a = await buildDocx(entries, { date: new Date(2026, 0, 1), level: 1 });
     const b = await buildDocx(
-      { ...entries, 'docProps/core.xml': '<dcterms:modified>2026-10-07T10:05:00Z</dcterms:modified>' },
+      {
+        ...entries,
+        'docProps/core.xml': '<dcterms:modified>2026-10-07T10:05:00Z</dcterms:modified>',
+      },
       { date: new Date(2026, 5, 1), level: 9 },
     );
     expect(a.equals(b)).toBe(false);
@@ -34,7 +38,10 @@ describe('docxContentHash', () => {
   it('erkennt inhaltliche Änderungen', async () => {
     const options = { date: new Date(2026, 0, 1), level: 6 };
     const a = await buildDocx(entries, options);
-    const b = await buildDocx({ ...entries, 'word/document.xml': '<w:document>Protokoll!</w:document>' }, options);
+    const b = await buildDocx(
+      { ...entries, 'word/document.xml': '<w:document>Protokoll!</w:document>' },
+      options,
+    );
     expect(await docxContentHash(a)).not.toBe(await docxContentHash(b));
   });
 });

@@ -1,4 +1,4 @@
-import { TemplateNameSchema, type MailConfig, type Template, type TemplatePatch } from '@cm/shared';
+import { TemplateNameSchema, type Template, type TemplatePatch } from '@cm/shared';
 import { Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -19,9 +19,8 @@ import {
 } from '../../components/ui';
 import { useAutosave } from '../../hooks/useAutosave';
 import { MailConfigFields } from '../mail/MailConfigFields';
+import { applyMailPatch, type MailPatch } from '../mail/mailPatch';
 import styles from './TemplateEditor.module.css';
-
-type MailPatch = Partial<Pick<MailConfig, 'enabled' | 'accountId' | 'recipients'>>;
 
 /** Bearbeitungsansicht einer Vorlage mit Autosave (Spezifikation Kap. 7.4.5). */
 export function TemplateEditor({ template }: { template: Template }) {
@@ -51,8 +50,7 @@ export function TemplateEditor({ template }: { template: Template }) {
   }
 
   function changeMail(patch: MailPatch) {
-    // Ein neu gewähltes Konto hebt den Hinweis „Mail-Konto gelöscht“ auf
-    setMail((current) => ({ ...current, ...patch, ...(patch.accountId ? { accountDeleted: false } : {}) }));
+    setMail((current) => applyMailPatch(current, patch));
     autosave.saveNow({ mail: patch });
   }
 
@@ -97,7 +95,8 @@ export function TemplateEditor({ template }: { template: Template }) {
                 Inhalt
               </Text>
               <div className={styles.contentPlaceholder}>
-                Der Vorlageninhalt folgt in einer späteren Version. Neue Dokumente starten vorerst leer.
+                Der Vorlageninhalt folgt in einer späteren Version. Neue Dokumente starten vorerst
+                leer.
               </div>
             </Stack>
             <div className={styles.mailSection}>

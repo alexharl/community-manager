@@ -34,7 +34,11 @@ async function postToDocumentServer<T>(
     throw new AppError(502, 'ONLYOFFICE_UNAVAILABLE', 'Document Server nicht erreichbar.');
   }
   if (!response.ok) {
-    throw new AppError(502, 'ONLYOFFICE_ERROR', `Document Server antwortet mit ${response.status}.`);
+    throw new AppError(
+      502,
+      'ONLYOFFICE_ERROR',
+      `Document Server antwortet mit ${response.status}.`,
+    );
   }
   return (await response.json()) as T;
 }
@@ -85,7 +89,11 @@ export async function convertDocument(
     throw new AppError(502, 'PDF_CONVERSION_FAILED', conversionErrorMessage(result.error));
   }
   if (!result.endConvert || !result.fileUrl) {
-    throw new AppError(504, 'PDF_CONVERSION_TIMEOUT', 'Die PDF-Erzeugung dauert zu lange – bitte erneut versuchen.');
+    throw new AppError(
+      504,
+      'PDF_CONVERSION_TIMEOUT',
+      'Die PDF-Erzeugung dauert zu lange – bitte erneut versuchen.',
+    );
   }
   return result.fileUrl;
 }

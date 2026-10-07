@@ -73,7 +73,8 @@ async function saveFromUrl(
     const response = await fetch(toInternalUrl(app.config.onlyoffice, url), {
       signal: AbortSignal.timeout(60_000),
     });
-    if (!response.ok) throw new Error(`Download vom Document Server fehlgeschlagen (${response.status})`);
+    if (!response.ok)
+      throw new Error(`Download vom Document Server fehlgeschlagen (${response.status})`);
     const buffer = Buffer.from(await response.arrayBuffer());
     const hash = await docxContentHash(buffer);
     const changed = hash !== doc.content_hash;
@@ -111,7 +112,10 @@ async function saveFromUrl(
  * „Abschließen“: lässt den Document Server sofort speichern und wartet auf den Callback,
  * damit die Abschlussseite den aktuellen Stand sieht (Kap. 5.3).
  */
-export async function forceSave(app: FastifyInstance, documentId: string): Promise<{ version: number }> {
+export async function forceSave(
+  app: FastifyInstance,
+  documentId: string,
+): Promise<{ version: number }> {
   const doc = await app.db
     .selectFrom('documents')
     .select('editor_key')
@@ -122,7 +126,10 @@ export async function forceSave(app: FastifyInstance, documentId: string): Promi
   // Vor dem Command registrieren – der Callback kann vor dessen Antwort eintreffen
   const waiter = forceSaveWaiters.wait(documentId, FORCESAVE_TIMEOUT_MS);
   try {
-    const { error } = await sendCommand(app.config.onlyoffice, { c: 'forcesave', key: doc.editor_key });
+    const { error } = await sendCommand(app.config.onlyoffice, {
+      c: 'forcesave',
+      key: doc.editor_key,
+    });
     if (error === 0) {
       await waiter.promise;
     } else if (error !== 1 && error !== 4) {

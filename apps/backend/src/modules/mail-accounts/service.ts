@@ -50,7 +50,9 @@ const columns = (input: Input) => ({
 const missingPassword = () => new AppError(400, 'VALIDATION', 'SMTP-Passwort fehlt.');
 
 export async function listMailAccounts(db: Db): Promise<MailAccount[]> {
-  const rows = await selectAccounts(db).orderBy(sql`lower(coalesce(label, smtp_user))`).execute();
+  const rows = await selectAccounts(db)
+    .orderBy(sql`lower(coalesce(label, smtp_user))`)
+    .execute();
   return rows.map(toDto);
 }
 
@@ -109,6 +111,33 @@ export async function deleteMailAccount(db: Db, id: string): Promise<void> {
     const result = await trx.deleteFrom('mail_accounts').where('id', '=', id).executeTakeFirst();
     if (result.numDeletedRows === 0n) throw notFound('Mail-Konto');
   });
+}
+
+export interface SmtpAccount {
+  host: string;
+  port: number;
+  user: string;
+  pass: string;
+  fromAddress: string;
+  fromName: string | null;
+}
+
+/** SMTP-Zugang inkl. entschlüsseltem Passwort – nur für den Versand im Backend. */
+export async function getSmtpAccount(db: Db, id: string, key: Buffer): Promise<SmtpAccount | null> {
+  const row = await db
+    .selectFrom('mail_accounts')
+    .select(['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass_enc', 'from_address', 'from_name'])
+    .where('id', '=', id)
+    .executeTakeFirst();
+  if (!row) return null;
+  return {
+    host: row.smtp_host,
+    port: row.smtp_port,
+    user: row.smtp_user,
+    pass: decrypt(row.smtp_pass_enc, key),
+    fromAddress: row.from_address ?? row.smtp_user,
+    fromName: row.from_name,
+  };
 }
 
 /** Prüft Verbindung und Anmeldung am SMTP-Server, ohne eine Mail zu senden. */

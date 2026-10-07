@@ -19,7 +19,10 @@ interface RequestOptions extends Omit<RequestInit, 'body' | 'headers'> {
 }
 
 /** fetch-Wrapper für `/api`: JSON rein/raus, Fehler im API-Format werden zu `ApiError`. */
-export async function api<T>(path: string, { body, headers, ...init }: RequestOptions = {}): Promise<T> {
+export async function api<T>(
+  path: string,
+  { body, headers, ...init }: RequestOptions = {},
+): Promise<T> {
   const isForm = body instanceof FormData;
   let response: Response;
   try {

@@ -76,7 +76,10 @@ export async function removeLogo(db: Db, dataDir: string): Promise<Settings> {
   return getSettings(db);
 }
 
-export async function getLogoFile(db: Db, dataDir: string): Promise<{ path: string; mime: string }> {
+export async function getLogoFile(
+  db: Db,
+  dataDir: string,
+): Promise<{ path: string; mime: string }> {
   const row = await db
     .selectFrom('app_settings')
     .select(['logo_filename', 'logo_mime'])

@@ -11,7 +11,10 @@ const EnvSchema = z.object({
   DATA_DIR: z.string().min(1),
   APP_SECRET: z
     .string()
-    .refine((value) => Buffer.from(value, 'base64').length === 32, 'muss 32 Byte (base64) lang sein'),
+    .refine(
+      (value) => Buffer.from(value, 'base64').length === 32,
+      'muss 32 Byte (base64) lang sein',
+    ),
   ONLYOFFICE_PUBLIC_URL: z.url(),
   ONLYOFFICE_INTERNAL_URL: z.url(),
   ONLYOFFICE_JWT_SECRET: z.string().min(16),

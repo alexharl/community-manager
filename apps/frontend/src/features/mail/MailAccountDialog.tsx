@@ -7,7 +7,8 @@ import { Button, Modal, Text, TextField, useToast } from '../../components/ui';
 import { errorMessage } from '../../lib/errors';
 import styles from './MailAccountDialog.module.css';
 
-type FormKey = 'label' | 'smtpHost' | 'smtpPort' | 'smtpUser' | 'smtpPass' | 'fromAddress' | 'fromName';
+type FormKey =
+  'label' | 'smtpHost' | 'smtpPort' | 'smtpUser' | 'smtpPass' | 'fromAddress' | 'fromName';
 type FormState = Record<FormKey, string>;
 type FieldErrors = Partial<Record<FormKey, string>>;
 
@@ -24,7 +25,10 @@ const toForm = (account: MailAccount | null): FormState => ({
 /** Prüft mit demselben Schema wie das Backend; beim Anlegen ist das Passwort Pflicht. */
 function validate(form: FormState, requirePassword: boolean) {
   const errors: FieldErrors = {};
-  const result = MailAccountInputSchema.safeParse({ ...form, smtpPass: form.smtpPass || undefined });
+  const result = MailAccountInputSchema.safeParse({
+    ...form,
+    smtpPass: form.smtpPass || undefined,
+  });
   if (!result.success) {
     for (const issue of result.error.issues) {
       errors[issue.path[0] as FormKey] ??= issue.message;
@@ -103,7 +107,8 @@ function MailAccountForm({ account, onClose }: Omit<MailAccountDialogProps, 'ope
     verify.mutate(
       { ...input, id: account?.id },
       {
-        onSuccess: () => setVerifyResult({ ok: true, message: 'Verbindung und Anmeldung erfolgreich.' }),
+        onSuccess: () =>
+          setVerifyResult({ ok: true, message: 'Verbindung und Anmeldung erfolgreich.' }),
         onError: (error) => setVerifyResult({ ok: false, message: errorMessage(error) }),
       },
     );

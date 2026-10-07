@@ -37,7 +37,9 @@ function toDto(row: Row): Template {
 }
 
 export async function listTemplates(db: Db): Promise<Template[]> {
-  const rows = await selectTemplates(db).orderBy(sql`lower(name)`).execute();
+  const rows = await selectTemplates(db)
+    .orderBy(sql`lower(name)`)
+    .execute();
   return rows.map(toDto);
 }
 

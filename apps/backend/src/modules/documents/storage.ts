@@ -35,4 +35,5 @@ export const pdfPath = (dataDir: string, doc: StoredDocument) =>
   doc.pdf_filename ? join(folderPath(dataDir, doc.storage_path), doc.pdf_filename) : null;
 
 /** ONLYOFFICE `document.key`: nur [0-9A-Za-z._=-], max. 128 Zeichen, neu je Bearbeitungssitzung. */
-export const newEditorKey = (id: string) => `${id.replace(/-/g, '')}-${randomBytes(4).toString('hex')}`;
+export const newEditorKey = (id: string) =>
+  `${id.replace(/-/g, '')}-${randomBytes(4).toString('hex')}`;

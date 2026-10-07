@@ -37,7 +37,9 @@ export function PageFallback({
             <EmptyState
               icon={notFound ? <SearchX /> : <TriangleAlert />}
               title={notFound ? notFoundTitle : `${title} konnte nicht geladen werden`}
-              description={notFound ? 'Möglicherweise wurde der Eintrag gelöscht.' : errorMessage(error)}
+              description={
+                notFound ? 'Möglicherweise wurde der Eintrag gelöscht.' : errorMessage(error)
+              }
               action={<ButtonLink to={back}>{backLabel}</ButtonLink>}
             />
           )}

@@ -35,6 +35,19 @@ services:
       - onlyoffice_data:/var/www/onlyoffice/Data
       - onlyoffice_logs:/var/log/onlyoffice
 
+  # Nur Entwicklung: fängt alle Mails ab, nichts geht nach außen (Weboberfläche auf :8025)
+  mailpit:
+    image: axllent/mailpit:v1.31.4
+    profiles: ['dev']
+    restart: unless-stopped
+    environment:
+      # Jede Anmeldung ohne TLS akzeptieren, wie ein echtes SMTP-Konto mit Benutzer/Passwort
+      MP_SMTP_AUTH_ACCEPT_ANY: '1'
+      MP_SMTP_AUTH_ALLOW_INSECURE: '1'
+    ports:
+      - '${MAILPIT_SMTP_PORT:-1025}:1025'
+      - '${MAILPIT_UI_PORT:-8025}:8025'
+
 volumes:
   pgdata:
   onlyoffice_data:

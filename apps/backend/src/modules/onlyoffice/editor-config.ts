@@ -23,7 +23,13 @@ export async function buildEditorConfig(
       key: doc.editor_key,
       title: `${doc.title}.docx`,
       url: `${base}/file`,
-      permissions: { edit: mode === 'edit', download: true, print: true, review: false, comment: false },
+      permissions: {
+        edit: mode === 'edit',
+        download: true,
+        print: true,
+        review: false,
+        comment: false,
+      },
     },
     editorConfig: {
       mode,

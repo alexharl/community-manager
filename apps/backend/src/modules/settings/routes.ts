@@ -39,7 +39,10 @@ export async function settingsRoutes(app: FastifyInstance) {
       .header('X-Content-Type-Options', 'nosniff');
     if (logo.mime === 'image/svg+xml') {
       // SVG kann Skripte enthalten – beim direkten Öffnen nichts ausführen
-      reply.header('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; sandbox");
+      reply.header(
+        'Content-Security-Policy',
+        "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+      );
     }
     return reply.type(logo.mime).send(createReadStream(logo.path));
   });

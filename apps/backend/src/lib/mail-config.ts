@@ -43,6 +43,10 @@ export async function assertMailAccountExists(db: Db, accountId: string | null |
     .where('id', '=', accountId)
     .executeTakeFirst();
   if (!account) {
-    throw new AppError(409, 'MAIL_ACCOUNT_NOT_FOUND', 'Das gewählte Mail-Konto existiert nicht mehr.');
+    throw new AppError(
+      409,
+      'MAIL_ACCOUNT_NOT_FOUND',
+      'Das gewählte Mail-Konto existiert nicht mehr.',
+    );
   }
 }

@@ -11,7 +11,8 @@ function mergePatches<T extends object>(current: T | null, patch: T): T {
   const result: Record<string, unknown> = { ...current };
   for (const [key, value] of Object.entries(patch)) {
     const existing = result[key];
-    result[key] = isPlainObject(existing) && isPlainObject(value) ? { ...existing, ...value } : value;
+    result[key] =
+      isPlainObject(existing) && isPlainObject(value) ? { ...existing, ...value } : value;
   }
   return result as T;
 }

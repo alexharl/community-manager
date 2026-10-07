@@ -15,6 +15,7 @@ interface ConfirmDialogProps {
   cancelLabel?: string;
   danger?: boolean;
   confirmDisabled?: boolean;
+  size?: 'sm' | 'md';
   /** Darf async sein: Der Dialog zeigt so lange einen Ladezustand und schließt erst bei Erfolg. */
   onConfirm: () => unknown;
 }
@@ -34,6 +35,7 @@ function ConfirmDialogContent({
   cancelLabel = 'Abbrechen',
   danger = false,
   confirmDisabled = false,
+  size = 'sm',
   onConfirm,
 }: Omit<ConfirmDialogProps, 'open'>) {
   const [busy, setBusy] = useState(false);
@@ -56,7 +58,7 @@ function ConfirmDialogContent({
       open
       onClose={onClose}
       title={title}
-      size="sm"
+      size={size}
       dismissible={!busy}
       footer={
         <>

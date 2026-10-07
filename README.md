@@ -25,6 +25,10 @@ npm run dev           # Backend (Port 3000) + Frontend (Port 5173)
 
 Danach ist die App unter <http://localhost:5173> erreichbar. Das Backend legt die Datenbanktabellen beim Start automatisch an.
 
+### Mails in der Entwicklung (Mailpit)
+
+`npm run services:up` startet zusätzlich [Mailpit](https://mailpit.axllent.org/). Es fängt alle Mails ab, nichts geht nach außen. Unter <http://localhost:8025> lassen sich die Mails samt HTML und Anhängen ansehen. Mail-Konto dafür in den Einstellungen: Host `127.0.0.1`, Port `1025`, Benutzer und Passwort beliebig.
+
 ## Skripte
 
 | Befehl | Zweck |

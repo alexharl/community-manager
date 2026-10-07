@@ -48,7 +48,12 @@ export async function documentRoutes(app: FastifyInstance) {
   app.get('/documents/:id', (request) => getDocument(app.db, dataDir, documentId(request.params)));
 
   app.patch('/documents/:id', (request) =>
-    updateDocument(app.db, dataDir, documentId(request.params), parse(DocumentPatchSchema, request.body)),
+    updateDocument(
+      app.db,
+      dataDir,
+      documentId(request.params),
+      parse(DocumentPatchSchema, request.body),
+    ),
   );
 
   app.delete('/documents/:id', async (request, reply) => {

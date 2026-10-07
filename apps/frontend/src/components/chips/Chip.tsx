@@ -14,7 +14,13 @@ interface ChipProps {
 }
 
 /** Ein Wert als Chip: statisch, entfernbar oder umschaltbar. */
-export function Chip({ children, onRemove, removeLabel = 'Entfernen', onToggle, pressed }: ChipProps) {
+export function Chip({
+  children,
+  onRemove,
+  removeLabel = 'Entfernen',
+  onToggle,
+  pressed,
+}: ChipProps) {
   if (onToggle) {
     return (
       <button

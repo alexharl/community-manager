@@ -10,9 +10,12 @@ const config = {
 
 describe('toInternalUrl', () => {
   it('ersetzt nur den Host und behält Pfad und Signatur-Parameter', () => {
-    expect(toInternalUrl(config, 'http://localhost:8090/cache/files/data/abc/output.pdf?md5=x&expires=1')).toBe(
-      'http://onlyoffice/cache/files/data/abc/output.pdf?md5=x&expires=1',
-    );
+    expect(
+      toInternalUrl(
+        config,
+        'http://localhost:8090/cache/files/data/abc/output.pdf?md5=x&expires=1',
+      ),
+    ).toBe('http://onlyoffice/cache/files/data/abc/output.pdf?md5=x&expires=1');
   });
 });
 

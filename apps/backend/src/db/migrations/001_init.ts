@@ -94,6 +94,8 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 
 export async function down(db: Kysely<unknown>): Promise<void> {
   await sql
-    .raw('DROP TABLE IF EXISTS document_dispatches, documents, templates, mail_accounts, app_settings')
+    .raw(
+      'DROP TABLE IF EXISTS document_dispatches, documents, templates, mail_accounts, app_settings',
+    )
     .execute(db);
 }

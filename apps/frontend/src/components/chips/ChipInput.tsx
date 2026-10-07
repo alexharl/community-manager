@@ -218,7 +218,13 @@ export function ChipInput({
             onPaste={handlePaste}
             onKeyDown={handleKeyDown}
           />
-          <ul ref={listRef} id={listboxId} role="listbox" popover="manual" className={styles.listbox}>
+          <ul
+            ref={listRef}
+            id={listboxId}
+            role="listbox"
+            popover="manual"
+            className={styles.listbox}
+          >
             {options.map((option, index) => (
               <li
                 key={option}

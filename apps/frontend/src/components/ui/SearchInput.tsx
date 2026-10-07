@@ -3,8 +3,10 @@ import type { ComponentProps } from 'react';
 import { cx } from '../../lib/cx';
 import styles from './SearchInput.module.css';
 
-interface SearchInputProps
-  extends Omit<ComponentProps<'input'>, 'value' | 'onChange' | 'type' | 'aria-label'> {
+interface SearchInputProps extends Omit<
+  ComponentProps<'input'>,
+  'value' | 'onChange' | 'type' | 'aria-label'
+> {
   value: string;
   onChange: (value: string) => void;
   /** Zugänglicher Name des Suchfelds. */

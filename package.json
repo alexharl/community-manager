@@ -15,7 +15,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "services:up": "docker compose up -d db onlyoffice",
+    "services:up": "docker compose up -d db onlyoffice mailpit",
     "services:down": "docker compose down",
     "test": "vitest run"
   },

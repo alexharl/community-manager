@@ -176,6 +176,7 @@ community-manager/
 | `db` | `postgres:17` | Volume `pgdata`, Host-Port `DB_PORT` (Standard 5433) nur für die Entwicklung |
 | `onlyoffice` | `onlyoffice/documentserver:9.4.0.1` (gepinnt) | `JWT_ENABLED=true`, `JWT_SECRET`, **`ALLOW_PRIVATE_IP_ADDRESS=true`** (sonst kann der DS das Backend im Docker-Netz bzw. auf dem Host nicht erreichen), `extra_hosts: host.docker.internal:host-gateway`, Host-Port `ONLYOFFICE_PORT` (Standard 8090) → 80 |
 | `app` | eigenes Image (Multi-Stage-Build) | Backend liefert in Produktion auch den Frontend-Build aus. Volume `data:/data` |
+| `mailpit` | `axllent/mailpit` (gepinnt, Profil `dev`) | Nur Entwicklung: fängt alle Mails ab (SMTP `:1025`, Weboberfläche `:8025`), akzeptiert jede Anmeldung. Startet nur, wenn ausdrücklich genannt (`npm run services:up`). |
 
 **Entwicklung:** `db` und `onlyoffice` laufen in Docker. Backend (`tsx watch`) und Frontend (Vite-Dev-Server mit Proxy `/api` → Backend) laufen lokal. Der Document Server erreicht das lokale Backend über `http://host.docker.internal:3000`.
 
@@ -556,7 +557,8 @@ Die Aktion ist deaktiviert, solange die PDF nicht aktuell bzw. noch in Erzeugung
 5. **Im Hintergrund** (im selben Prozess) die Mail senden:
    - Erfolg: Zeile auf `sent` setzen, mit `sent_at`, `message_id` und `rejected_addresses` aus `info.rejected`. Lehnt der Server einzelne Adressen ab, bleibt die Versendung `sent`, die abgelehnten Adressen erscheinen als Warnung am Eintrag.
    - Fehler: Zeile auf `failed` setzen, mit `error`.
-6. Beim Serverstart werden `pending`-Zeilen, die älter als 5 Minuten sind, auf `failed` gesetzt („Versand durch Neustart abgebrochen“).
+6. Beim Serverstart werden **alle** `pending`-Zeilen auf `failed` gesetzt („Versand durch Neustart des Servers abgebrochen.“): Die Zustellung läuft im Prozess, nach einem Neustart kann keine Versendung mehr unterwegs sein. Beim geordneten Herunterfahren wartet der Server auf laufende Zustellungen.
+7. HTML aus mammoth: Direkte Formatierung (Strg+B/I) wird zu `<strong>`/`<em>`, zusätzlich die Zeichenvorlagen „Strong“ und „Emphasis“. Weitere Formatierung (Farben, Schriftgrößen) bleibt bewusst außen vor – die PDF im Anhang ist originalgetreu.
 
 **Aufbau der Mail:**
 
@@ -839,7 +841,9 @@ Eine Karte **„Vorlagen“** mit „+“ im Kartenkopf.
 - Der Kopf zeigt links den Titel als `EditableTitle` (Klick → Eingabefeld; Enter/Blur speichert, Esc bricht ab) und rechts **„Abschließen“**.
 - Darunter füllt `OnlyOfficeEditor mode="edit"` den restlichen Viewport.
 - „Abschließen“: Button zeigt „Wird gespeichert …“ → `POST /forcesave` (5.3) → Navigation zu `/finalize`. Bei Fehler ein Toast, der Button bleibt.
-- Fehlerzustand, falls der DS nicht erreichbar ist: „Editor konnte nicht geladen werden“ + „Erneut versuchen“.
+- Fehlerzustand, falls der DS nicht erreichbar ist oder der Editor einen kritischen Fehler meldet (`onError`): „Editor konnte nicht geladen werden“ + „Erneut versuchen“.
+- Das Lade-Overlay verschwindet, sobald die Editor-Oberfläche steht (`onAppReady`); den Dokument-Ladefortschritt und eigene Meldungen zeigt ONLYOFFICE selbst.
+- **Wiederöffnen während des Speicherns:** Öffnet jemand den Editor genau dann, wenn ONLYOFFICE die vorherige Sitzung gerade speichert (Status 2, ~10 s nach dem Verlassen), ist der Schlüssel veraltet. ONLYOFFICE meldet das mit `onRequestRefreshFile`; der Editor lädt dann die Konfiguration neu (wartet bis zu 5 s auf den neuen Schlüssel) und startet neu.
 
 #### 7.4.7 Dokument ansehen (`/documents/:id`)
 

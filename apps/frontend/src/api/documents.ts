@@ -70,7 +70,8 @@ export function useDocument(id: string, { alwaysFresh = false }: { alwaysFresh?:
 export function useEditorConfig(id: string, mode: EditorMode, theme: ResolvedTheme) {
   return useQuery({
     queryKey: documentKeys.editorConfig(id, mode, theme),
-    queryFn: () => api<EditorConfigResponse>(`/documents/${id}/editor-config?mode=${mode}&theme=${theme}`),
+    queryFn: () =>
+      api<EditorConfigResponse>(`/documents/${id}/editor-config?mode=${mode}&theme=${theme}`),
     gcTime: 0,
     staleTime: Infinity,
     refetchOnWindowFocus: false,

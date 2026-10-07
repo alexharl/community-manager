@@ -69,7 +69,8 @@ function NewDocumentChooser({ onClose }: { onClose: () => void }) {
       {isPending && <LoadingState label="Vorlagen werden geladen …" />}
       {templates?.length === 0 && (
         <Text tone="muted" size="sm" className={styles.hint}>
-          Noch keine Vorlagen vorhanden. Vorlagen legst du unter Dokumente → Dokument-Einstellungen an.
+          Noch keine Vorlagen vorhanden. Vorlagen legst du unter Dokumente → Dokument-Einstellungen
+          an.
         </Text>
       )}
     </Modal>

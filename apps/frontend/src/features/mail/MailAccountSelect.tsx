@@ -13,7 +13,9 @@ interface MailAccountSelectProps {
 }
 
 const optionLabel = (account: MailAccount) =>
-  account.label ? `${account.label} (${account.effectiveFromAddress})` : account.effectiveFromAddress;
+  account.label
+    ? `${account.label} (${account.effectiveFromAddress})`
+    : account.effectiveFromAddress;
 
 const createLink = <Link to="/settings">Mail-Konto anlegen</Link>;
 

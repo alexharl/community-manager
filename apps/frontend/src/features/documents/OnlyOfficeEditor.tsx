@@ -1,7 +1,7 @@
-import type { EditorMode } from '@cm/shared';
+import type { EditorConfigResponse, EditorMode } from '@cm/shared';
 import { DocumentEditor, type DocumentEditorProps } from '@onlyoffice/document-editor-react';
 import { RotateCw, TriangleAlert } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useEditorConfig } from '../../api/documents';
 import { Button, EmptyState, LoadingState } from '../../components/ui';
 import { errorMessage } from '../../lib/errors';
@@ -13,39 +13,58 @@ interface OnlyOfficeEditorProps {
   mode: EditorMode;
 }
 
-// Die Komponente ruft onAppReady ungeprüft auf – daher immer einen Handler übergeben
-const noop = () => undefined;
+const editorKey = (response: EditorConfigResponse | undefined) =>
+  (response?.config.document as { key?: string } | undefined)?.key;
 
-/** Bindet den ONLYOFFICE-Editor ein (Bearbeiten oder Ansehen), inkl. Lade- und Fehlerzustand. */
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Bindet den ONLYOFFICE-Editor ein (Bearbeiten oder Ansehen), inkl. Lade- und Fehlerzustand.
+ * Das Overlay verschwindet, sobald die Editor-Oberfläche steht – Meldungen von ONLYOFFICE
+ * bleiben so immer sichtbar. `data-ready` markiert das fertig geladene Dokument.
+ */
 export function OnlyOfficeEditor({ documentId, mode }: OnlyOfficeEditorProps) {
   const { resolved } = useTheme();
-  const { data, error, isPending, refetch } = useEditorConfig(documentId, mode, resolved);
-  const [ready, setReady] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  // Neuer Schlüssel erzwingt nach einem Fehler einen frischen Editor
+  const { data, error, refetch } = useEditorConfig(documentId, mode, resolved);
+  const [appReady, setAppReady] = useState(false);
+  const [documentReady, setDocumentReady] = useState(false);
+  const [editorError, setEditorError] = useState<string | null>(null);
+  const [reloading, setReloading] = useState(false);
+  // Neuer Schlüssel erzwingt einen frischen Editor
   const [attempt, setAttempt] = useState(0);
 
-  if (error || loadError) {
+  /**
+   * Editor mit frischer Konfiguration neu starten. Wird u. a. nach `onRequestRefreshFile`
+   * aufgerufen: Das Dokument wurde mit einem Schlüssel geöffnet, dessen Sitzung gerade
+   * gespeichert wurde – dann kurz auf den neuen Schlüssel warten (Kap. 5.2).
+   */
+  const reloadEditor = useCallback(
+    async (previousKey?: string) => {
+      setReloading(true);
+      setAppReady(false);
+      setDocumentReady(false);
+      setEditorError(null);
+      for (let tries = 0; tries < 5; tries++) {
+        const { data: next } = await refetch();
+        if (!previousKey || editorKey(next) !== previousKey) break;
+        await wait(1000);
+      }
+      setAttempt((n) => n + 1);
+      setReloading(false);
+    },
+    [refetch],
+  );
+
+  const failure = error ? errorMessage(error) : editorError;
+  if (failure) {
     return (
       <div className={styles.container}>
         <EmptyState
           icon={<TriangleAlert />}
           title="Editor konnte nicht geladen werden"
-          description={
-            loadError
-              ? 'Der Document Server ist nicht erreichbar. Läuft der ONLYOFFICE-Container?'
-              : errorMessage(error)
-          }
+          description={failure}
           action={
-            <Button
-              icon={<RotateCw />}
-              onClick={() => {
-                setLoadError(null);
-                setReady(false);
-                setAttempt((n) => n + 1);
-                void refetch();
-              }}
-            >
+            <Button icon={<RotateCw />} onClick={() => void reloadEditor()}>
               Erneut versuchen
             </Button>
           }
@@ -54,14 +73,15 @@ export function OnlyOfficeEditor({ documentId, mode }: OnlyOfficeEditorProps) {
     );
   }
 
+  const currentKey = editorKey(data);
   return (
-    <div className={styles.container} data-ready={ready || undefined}>
-      {!ready && (
+    <div className={styles.container} data-ready={documentReady || undefined}>
+      {(!appReady || reloading) && (
         <div className={styles.overlay}>
           <LoadingState label="Editor wird geladen …" />
         </div>
       )}
-      {!isPending && (
+      {data && !reloading && (
         // Eigener Wrapper: ONLYOFFICE ersetzt das Platzhalter-div durch ein iframe
         <div key={attempt} className={styles.frame}>
           <DocumentEditor
@@ -70,9 +90,19 @@ export function OnlyOfficeEditor({ documentId, mode }: OnlyOfficeEditorProps) {
             config={data.config as DocumentEditorProps['config']}
             height="100%"
             width="100%"
-            events_onAppReady={noop}
-            events_onDocumentReady={() => setReady(true)}
-            onLoadComponentError={(_code, description) => setLoadError(description)}
+            // Handler werden beim Erzeugen des Editors übernommen → nur stabile Funktionen
+            events_onAppReady={() => setAppReady(true)}
+            events_onDocumentReady={() => setDocumentReady(true)}
+            events_onRequestRefreshFile={() => void reloadEditor(currentKey)}
+            events_onError={(event) => {
+              const detail = (event as { data?: { errorDescription?: string } }).data;
+              setEditorError(detail?.errorDescription ?? 'Unbekannter Fehler im Editor.');
+            }}
+            onLoadComponentError={() =>
+              setEditorError(
+                'Der Document Server ist nicht erreichbar. Läuft der ONLYOFFICE-Container?',
+              )
+            }
           />
         </div>
       )}

@@ -9,7 +9,10 @@ describe('ForceSaveWaiters', () => {
     const other = waiters.wait('anderes', 50);
     waiters.settle('doc');
     await expect(Promise.all([a.promise, b.promise])).resolves.toBeDefined();
-    await expect(other.promise).rejects.toMatchObject({ code: 'FORCESAVE_TIMEOUT', statusCode: 504 });
+    await expect(other.promise).rejects.toMatchObject({
+      code: 'FORCESAVE_TIMEOUT',
+      statusCode: 504,
+    });
   });
 
   it('gibt Fehler weiter und ignoriert Callbacks ohne Wartende', async () => {
@@ -25,7 +28,10 @@ describe('ForceSaveWaiters', () => {
     const waiter = waiters.wait('doc', 10);
     waiter.cancel();
     const result = await Promise.race([
-      waiter.promise.then(() => 'aufgelöst', () => 'abgelehnt'),
+      waiter.promise.then(
+        () => 'aufgelöst',
+        () => 'abgelehnt',
+      ),
       new Promise((resolve) => setTimeout(() => resolve('offen'), 40)),
     ]);
     expect(result).toBe('offen');

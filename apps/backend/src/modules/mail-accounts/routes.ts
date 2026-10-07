@@ -15,7 +15,11 @@ export async function mailAccountRoutes(app: FastifyInstance) {
   app.get('/mail-accounts', () => listMailAccounts(app.db));
 
   app.post('/mail-accounts', async (request, reply) => {
-    const account = await createMailAccount(app.db, parse(MailAccountInputSchema, request.body), key);
+    const account = await createMailAccount(
+      app.db,
+      parse(MailAccountInputSchema, request.body),
+      key,
+    );
     return reply.status(201).send(account);
   });
 

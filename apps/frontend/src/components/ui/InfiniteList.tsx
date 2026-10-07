@@ -44,7 +44,9 @@ export function InfiniteList<T>({
         ))}
       </List>
       {hasMore && (
-        <div ref={sentinelRef}>{loadingMore && <LoadingState label="Weitere werden geladen …" />}</div>
+        <div ref={sentinelRef}>
+          {loadingMore && <LoadingState label="Weitere werden geladen …" />}
+        </div>
       )}
     </>
   );
