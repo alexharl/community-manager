@@ -20,6 +20,12 @@
   font-size: var(--font-size-sm);
 }
 
+.md {
+  width: 64px;
+  height: 64px;
+  font-size: var(--font-size-xl);
+}
+
 .lg {
   width: 96px;
   height: 96px;

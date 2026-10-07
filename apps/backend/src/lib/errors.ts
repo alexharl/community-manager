@@ -16,6 +16,15 @@ export class AppError extends Error {
 
 export const notFound = (what: string) => new AppError(404, 'NOT_FOUND', `${what} nicht gefunden.`);
 
+const IdParamsSchema = z.object({ id: z.uuid() });
+
+/** Liest `:id` aus den Routenparametern; keine gültige UUID bedeutet „nicht gefunden“. */
+export function parseId(params: unknown, what: string): string {
+  const result = IdParamsSchema.safeParse(params);
+  if (!result.success) throw notFound(what);
+  return result.data.id;
+}
+
 export const errorBody = (code: string, message: string): ApiErrorBody => ({
   error: { code, message },
 });
@@ -24,7 +33,9 @@ export const errorBody = (code: string, message: string): ApiErrorBody => ({
 export function parse<S extends z.ZodType>(schema: S, data: unknown): z.output<S> {
   const result = schema.safeParse(data);
   if (!result.success) {
-    throw new AppError(400, 'VALIDATION', z.prettifyError(result.error));
+    // Lesbarer Satz für die Oberfläche, z. B. „SMTP-Host fehlt. Ungültige E-Mail-Adresse.“
+    const messages = new Set(result.error.issues.map((issue) => issue.message));
+    throw new AppError(400, 'VALIDATION', [...messages].join(' '));
   }
   return result.data;
 }

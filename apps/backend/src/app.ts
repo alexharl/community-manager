@@ -1,11 +1,14 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { LOGO_MAX_BYTES } from '@cm/shared';
+import fastifyMultipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { Config } from './config';
 import type { Db } from './db/db';
 import { errorBody, errorHandler } from './lib/errors';
 import { healthRoutes } from './modules/health/routes';
+import { mailAccountRoutes } from './modules/mail-accounts/routes';
 import { settingsRoutes } from './modules/settings/routes';
 
 declare module 'fastify' {
@@ -31,11 +34,13 @@ export async function buildApp(config: Config, db: Db): Promise<FastifyInstance>
   app.decorate('db', db);
   app.addHook('onClose', () => db.destroy());
   app.setErrorHandler(errorHandler);
+  await app.register(fastifyMultipart, { limits: { fileSize: LOGO_MAX_BYTES, files: 1 } });
 
   await app.register(
     async (api) => {
       await api.register(healthRoutes);
       await api.register(settingsRoutes);
+      await api.register(mailAccountRoutes);
     },
     { prefix: '/api' },
   );

@@ -1,38 +1,39 @@
-import { Monitor, Moon, Sun } from 'lucide-react';
+import type { SettingsUpdate } from '@cm/shared';
+import { useSettings, useUpdateSettings } from '../api/settings';
 import { PageContent } from '../components/layout/PageContent';
 import { PageHeader } from '../components/layout/PageHeader';
-import { Card, SegmentedControl, Stack, Text, type SegmentedOption } from '../components/ui';
+import { Card, LoadingState, SaveStatus } from '../components/ui';
+import { MailAccountsCard } from '../features/mail/MailAccountsCard';
+import { AppearanceCard } from '../features/settings/AppearanceCard';
+import { GeneralSettingsCard } from '../features/settings/GeneralSettingsCard';
+import { useAutosave } from '../hooks/useAutosave';
 import { usePageTitle } from '../hooks/usePageTitle';
-import { useTheme } from '../theme/context';
-import type { ThemePreference } from '../theme/theme';
-
-const THEME_OPTIONS: SegmentedOption<ThemePreference>[] = [
-  { value: 'light', label: 'Hell', icon: <Sun /> },
-  { value: 'dark', label: 'Dunkel', icon: <Moon /> },
-  { value: 'system', label: 'System', icon: <Monitor /> },
-];
 
 export function SettingsPage() {
   usePageTitle('Einstellungen');
-  const { preference, setPreference } = useTheme();
+  const { data: settings } = useSettings();
+  const updateSettings = useUpdateSettings();
+  const autosave = useAutosave((patch: SettingsUpdate) => updateSettings.mutateAsync(patch));
 
   return (
     <>
-      <PageHeader title="Einstellungen" />
+      <PageHeader
+        title="Einstellungen"
+        status={<SaveStatus state={autosave.state} error={autosave.error} />}
+      />
       <PageContent>
-        <Card title="Darstellung">
-          <Stack gap={3} align="flex-start">
-            <SegmentedControl
-              label="Farbschema"
-              value={preference}
-              options={THEME_OPTIONS}
-              onChange={setPreference}
-            />
-            <Text tone="muted" size="sm">
-              Wird nur in diesem Browser gespeichert.
-            </Text>
-          </Stack>
-        </Card>
+        {settings ? (
+          <GeneralSettingsCard
+            settings={settings}
+            onNameChange={(communityName) => autosave.schedule({ communityName })}
+          />
+        ) : (
+          <Card title="Allgemein">
+            <LoadingState />
+          </Card>
+        )}
+        <AppearanceCard />
+        <MailAccountsCard />
       </PageContent>
     </>
   );

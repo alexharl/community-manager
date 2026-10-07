@@ -601,7 +601,7 @@ HTTP-Codes: `400` Validierung, `404` nicht gefunden, `409` fachlicher Konflikt, 
 | `PATCH /settings` | `{ communityName }` |
 | `PUT /settings/logo` | Upload (multipart; png, jpg, webp, svg; max. 2 MB) |
 | `DELETE /settings/logo` | Logo entfernen |
-| `GET /settings/logo` | Bilddatei (SVG mit `Content-Security-Policy: script-src 'none'`). `logoUrl` enthält `?v=<updated_at>` gegen Caching. |
+| `GET /settings/logo` | Bilddatei (SVG mit restriktiver `Content-Security-Policy`). Das Format wird am Dateiinhalt erkannt, nicht am MIME-Type des Browsers. Jeder Upload erhält einen eindeutigen Dateinamen (`logo-<zufall>.<ext>`); `logoUrl` enthält ihn als `?v=…`, daher ist die Datei dauerhaft cachebar. |
 | **Mail-Konten** | |
 | `GET /mail-accounts` | Liste inkl. `templateCount`, ohne Passwort |
 | `POST /mail-accounts` | anlegen |

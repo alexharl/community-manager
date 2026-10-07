@@ -1,0 +1,22 @@
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+.status svg {
+  width: 16px;
+  height: 16px;
+}
+
+.saved {
+  color: var(--color-success);
+}
+
+.error {
+  color: var(--color-danger);
+  cursor: help;
+}

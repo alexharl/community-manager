@@ -4,7 +4,7 @@ import styles from './CommunityLogo.module.css';
 interface CommunityLogoProps {
   url: string | null;
   name: string;
-  size?: 'sm' | 'lg';
+  size?: 'sm' | 'md' | 'lg';
 }
 
 const initials = (name: string) =>

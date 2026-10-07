@@ -32,6 +32,7 @@ Danach ist die App unter <http://localhost:5173> erreichbar. Das Backend legt di
 | `npm run dev` | Backend und Frontend im Entwicklungsmodus |
 | `npm run build` | Produktions-Build von Frontend und Backend |
 | `npm run typecheck` | TypeScript-Prüfung aller Pakete |
+| `npm test` | Unit-Tests (Vitest) |
 | `npm run lint` | ESLint |
 | `npm run format` | Prettier |
 | `npm run services:up` / `services:down` | Docker-Dienste starten/stoppen |

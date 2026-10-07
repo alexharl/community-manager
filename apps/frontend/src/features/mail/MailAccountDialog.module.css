@@ -1,0 +1,29 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.hostRow,
+.twoColumns {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.hostRow {
+  grid-template-columns: 1fr 110px;
+}
+
+.twoColumns {
+  grid-template-columns: 1fr 1fr;
+}
+
+.verify {
+  margin-right: auto;
+}
+
+@media (max-width: 560px) {
+  .twoColumns {
+    grid-template-columns: 1fr;
+  }
+}
