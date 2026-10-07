@@ -37,6 +37,10 @@ Danach ist die App unter <http://localhost:5173> erreichbar. Das Backend legt di
 | `npm run format` | Prettier |
 | `npm run services:up` / `services:down` | Docker-Dienste starten/stoppen |
 
+## Hinweise
+
+- **npm-Override für `argparse`:** mammoth hängt an `argparse` 1.x, das `sprintf-js` (DoS-Lücke ohne Fix) mitbringt. `argparse` braucht mammoth nur für sein Kommandozeilen-Tool, daher erzwingt `package.json` Version 2.x. `npm ls` markiert das als „invalid“, Installation (`npm ci`) und Betrieb sind davon nicht betroffen.
+
 ## Aufbau
 
 ```

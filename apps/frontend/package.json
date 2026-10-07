@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@cm/shared": "^0.1.0",
+    "@onlyoffice/document-editor-react": "^2.2.0",
     "@tanstack/react-query": "^5.104.1",
     "lucide-react": "^1.52.0",
     "react": "^19.3.0",

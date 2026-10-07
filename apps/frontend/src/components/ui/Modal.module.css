@@ -53,6 +53,11 @@
   overflow-y: auto;
 }
 
+.flush {
+  gap: 0;
+  padding: 0;
+}
+
 .footer {
   display: flex;
   flex-wrap: wrap;

@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { mkdir, rename, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 export const documentsDir = (dataDir: string) => join(dataDir, 'documents');
@@ -26,4 +26,16 @@ export async function writeFileAtomic(path: string, data: Buffer | string): Prom
 /** Löscht eine Datei; fehlt sie bereits, ist das kein Fehler. */
 export async function removeFile(path: string): Promise<void> {
   await rm(path, { force: true });
+}
+
+export const fileExists = (path: string): Promise<boolean> =>
+  access(path).then(
+    () => true,
+    () => false,
+  );
+
+/** Content-Disposition mit ASCII-Fallback und UTF-8-Dateinamen (Umlaute im Titel). */
+export function contentDisposition(type: 'inline' | 'attachment', filename: string): string {
+  const fallback = filename.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
+  return `${type}; filename="${fallback}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
 }

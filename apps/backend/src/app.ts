@@ -7,8 +7,10 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import type { Config } from './config';
 import type { Db } from './db/db';
 import { errorBody, errorHandler } from './lib/errors';
+import { documentRoutes } from './modules/documents/routes';
 import { healthRoutes } from './modules/health/routes';
 import { mailAccountRoutes } from './modules/mail-accounts/routes';
+import { onlyofficeRoutes } from './modules/onlyoffice/routes';
 import { settingsRoutes } from './modules/settings/routes';
 import { tagRoutes } from './modules/tags/routes';
 import { templateRoutes } from './modules/templates/routes';
@@ -45,6 +47,8 @@ export async function buildApp(config: Config, db: Db): Promise<FastifyInstance>
       await api.register(mailAccountRoutes);
       await api.register(templateRoutes);
       await api.register(tagRoutes);
+      await api.register(documentRoutes);
+      await api.register(onlyofficeRoutes);
     },
     { prefix: '/api' },
   );

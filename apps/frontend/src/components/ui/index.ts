@@ -1,6 +1,7 @@
 export { Button, ButtonLink, type ButtonProps, type ButtonVariant } from './Button';
 export { Card } from './Card';
 export { ConfirmDialog } from './ConfirmDialog';
+export { EditableTitle } from './EditableTitle';
 export { EmptyState } from './EmptyState';
 export { Field, type FieldControlProps, type FieldMessageProps } from './Field';
 export { IconButton } from './IconButton';

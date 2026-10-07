@@ -270,7 +270,7 @@ CREATE TABLE documents (
   template_id           uuid        REFERENCES templates(id) ON DELETE SET NULL,
   template_name         text,                   -- Snapshot des Vorlagennamens; NULL = leeres Dokument
   version               integer     NOT NULL DEFAULT 1,
-  content_hash          text        NOT NULL,   -- sha256 der aktuellen DOCX
+  content_hash          text        NOT NULL,   -- Inhalts-Hash der DOCX (siehe 5.2)
   editor_key            text        NOT NULL,   -- ONLYOFFICE document.key (siehe 5.2)
   content_text          text        NOT NULL DEFAULT '',
   search_vector         tsvector    GENERATED ALWAYS AS (
@@ -376,7 +376,7 @@ DATA_DIR/
 3. Pfad und Dateinamen bestimmen (4.4), Ordner anlegen (`mkdir -p`).
 4. `assets/blank.docx` dorthin kopieren. Später wird hier aus dem Vorlageninhalt generiert.
 5. Datensatz anlegen:
-   - `version = 1`, `content_hash = sha256(Datei)`, `editor_key = neuer Key`, `content_text = ''`
+   - `version = 1`, `content_hash = Inhalts-Hash`, `editor_key = neuer Key`, `content_text = ''`
    - aus der Vorlage **kopieren [A5]:** `tags`, `mail_enabled`, `mail_account_id`, `mail_account_deleted`, `mail_recipients`, `template_name`
 6. Antwort: das Dokument. Das Frontend navigiert zu `/documents/:id/edit`.
 
@@ -420,7 +420,7 @@ Hinweis: Der Datensatz entsteht sofort. Wer den Editor ohne Änderungen verläss
 
 **Datei für den DS:** `GET /api/onlyoffice/documents/:id/file` liefert die aktuelle DOCX. Bei aktiviertem JWT sendet der DS einen `Authorization: Bearer <jwt>`-Header, den das Backend prüft.
 
-**Callback:** `POST /api/onlyoffice/documents/:id/callback`. Das Backend prüft das JWT (`body.token` oder `Authorization`-Header) und antwortet **immer** mit `{"error": 0}`, außer bei ungültiger Signatur. Andernfalls wiederholt der DS den Callback und zeigt dem Nutzer Fehler an.
+**Callback:** `POST /api/onlyoffice/documents/:id/callback`. Das Backend prüft das JWT (`body.token` oder `Authorization`-Header) und antwortet mit `{"error": 0}`. Schlägt die Verarbeitung fehl (z. B. Download), antwortet es mit `{"error": 1}`: Der DS behält die Änderungen dann und wiederholt den Callback. Ungültige oder fehlende Tokens ergeben 401/403.
 
 | Status | Bedeutung | Reaktion |
 |---|---|---|
@@ -433,8 +433,8 @@ Hinweis: Der Datensatz entsteht sofort. Wer den Editor ohne Änderungen verläss
 
 `saveFromUrl(url)`, pro Dokument über einen **In-Process-Mutex** serialisiert (derselbe Mutex wie bei der PDF-Erzeugung):
 
-1. Datei von `url` herunterladen, `sha256` berechnen.
-2. Hash gleich `content_hash` → nichts tun (keine neue Version).
+1. Datei von `url` herunterladen (Host durch `ONLYOFFICE_INTERNAL_URL` ersetzt) und den **Inhalts-Hash** berechnen: SHA-256 über die entpackten ZIP-Einträge, sortiert nach Namen, ohne `docProps/*`. Ein Hash über die Datei selbst taugt nicht: ONLYOFFICE erzeugt bei jedem Speichern einen neuen ZIP-Container (Zeitstempel, Kompression), auch ohne inhaltliche Änderung. Das hätte nach jedem Sitzungsende eine neue Version ausgelöst und PDF sowie Versand als veraltet markiert.
+2. Hash gleich `content_hash` → keine neue Version. Ein Callback mit einem anderen als dem aktuellen `editor_key` wird ignoriert.
 3. Sonst: Datei atomar ersetzen, `version += 1`, `content_hash` setzen, `edited_at = now()`, `content_text = mammoth.extractRawText()`. Der Suchindex aktualisiert sich über die generierte Spalte.
 
 Damit entspricht eine Version ungefähr einer Bearbeitungssitzung bzw. einem „Abschließen“.

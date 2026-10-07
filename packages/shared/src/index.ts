@@ -1,6 +1,7 @@
 import './zod-locale';
 
 export * from './api';
+export * from './documents';
 export * from './emails';
 export * from './mail-accounts';
 export * from './mail-config';

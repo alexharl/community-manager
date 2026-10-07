@@ -13,6 +13,8 @@ export interface ModalProps {
   size?: 'sm' | 'md' | 'lg';
   /** `false` sperrt Schließen per Esc, Hintergrund-Klick und X (z. B. während einer Aktion). */
   dismissible?: boolean;
+  /** `false` für Inhalte, die bis zum Rand reichen (z. B. Listen). */
+  padded?: boolean;
 }
 
 /**
@@ -31,6 +33,7 @@ function ModalDialog({
   footer,
   size = 'md',
   dismissible = true,
+  padded = true,
 }: Omit<ModalProps, 'open'>) {
   const ref = useRef<HTMLDialogElement>(null);
   const pressedOnBackdrop = useRef(false);
@@ -70,7 +73,7 @@ function ModalDialog({
           </h2>
           {dismissible && <IconButton icon={<X />} label="Schließen" onClick={onClose} />}
         </header>
-        {children && <div className={styles.body}>{children}</div>}
+        {children && <div className={cx(styles.body, !padded && styles.flush)}>{children}</div>}
         {footer && <footer className={styles.footer}>{footer}</footer>}
       </div>
     </dialog>
