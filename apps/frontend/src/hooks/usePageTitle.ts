@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
-import { useSettings } from '../api/settings';
+import { FALLBACK_COMMUNITY_NAME, useSettings } from '../api/settings';
 
 /** Setzt den Browser-Tab-Titel auf „<Seite> – <Community-Name>“. */
 export function usePageTitle(title?: string) {
   const { data } = useSettings();
-  const name = data?.communityName ?? 'Community Manager';
+  const name = data?.communityName ?? FALLBACK_COMMUNITY_NAME;
 
   useEffect(() => {
     document.title = title ? `${title} – ${name}` : name;

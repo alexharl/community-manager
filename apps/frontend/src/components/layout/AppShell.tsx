@@ -1,7 +1,7 @@
 import { Menu } from 'lucide-react';
 import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router';
-import { useSettings } from '../../api/settings';
+import { useCommunityName, useSettings } from '../../api/settings';
 import { NAV_ITEMS } from '../../app/navigation';
 import { CommunityLogo } from '../../features/settings/CommunityLogo';
 import { useFavicon } from '../../hooks/useFavicon';
@@ -14,7 +14,7 @@ export function AppShell() {
   const { data: settings } = useSettings();
   const [navOpen, setNavOpen] = useState(false);
   const closeNav = () => setNavOpen(false);
-  const name = settings?.communityName ?? '';
+  const name = useCommunityName();
 
   useFavicon(settings?.logoUrl ?? null);
 
@@ -22,7 +22,7 @@ export function AppShell() {
     <div className={styles.shell}>
       <aside className={cx(styles.sidebar, navOpen && styles.open)}>
         <Link to="/" className={styles.brand} onClick={closeNav}>
-          {settings && <CommunityLogo url={settings.logoUrl} name={name} />}
+          {name && <CommunityLogo url={settings?.logoUrl ?? null} name={name} />}
           <span className={styles.brandName}>{name}</span>
         </Link>
         <nav className={styles.nav} aria-label="Hauptmenü">

@@ -5,7 +5,7 @@ Verwaltungstool für Vereinsangelegenheiten. **Version 1:** Erstellung, Ablage, 
 | | |
 |---|---|
 | Stand | 07.10.2026 |
-| Status | v0.2 – Grundlage für die Implementierung |
+| Status | v1.0 – umgesetzt (Meilensteine 1–8) |
 | Entscheidungen | im Text markiert mit **[A1]** … **[A10]**, gesammelt in [Kapitel 12](#12-entscheidungen) |
 
 ## Inhalt
@@ -175,12 +175,12 @@ community-manager/
 |---|---|---|
 | `db` | `postgres:17` | Volume `pgdata`, Host-Port `DB_PORT` (Standard 5433) nur für die Entwicklung |
 | `onlyoffice` | `onlyoffice/documentserver:9.4.0.1` (gepinnt) | `JWT_ENABLED=true`, `JWT_SECRET`, **`ALLOW_PRIVATE_IP_ADDRESS=true`** (sonst kann der DS das Backend im Docker-Netz bzw. auf dem Host nicht erreichen), `extra_hosts: host.docker.internal:host-gateway`, Host-Port `ONLYOFFICE_PORT` (Standard 8090) → 80 |
-| `app` | eigenes Image (Multi-Stage-Build) | Backend liefert in Produktion auch den Frontend-Build aus. Volume `data:/data` |
+| `app` | eigenes Image (`Dockerfile`, Multi-Stage, Profil `prod`) | Backend liefert in Produktion auch den Frontend-Build aus. Läuft als Benutzer `node`, `init: true` für sauberes Herunterfahren, Healthcheck auf `/api/health`, `TZ` (Standard `Europe/Berlin`), Volume `appdata:/data`, Host-Port `APP_PORT` (Standard 3080) |
 | `mailpit` | `axllent/mailpit` (gepinnt, Profil `dev`) | Nur Entwicklung: fängt alle Mails ab (SMTP `:1025`, Weboberfläche `:8025`), akzeptiert jede Anmeldung. Startet nur, wenn ausdrücklich genannt (`npm run services:up`). |
 
 **Entwicklung:** `db` und `onlyoffice` laufen in Docker. Backend (`tsx watch`) und Frontend (Vite-Dev-Server mit Proxy `/api` → Backend) laufen lokal. Der Document Server erreicht das lokale Backend über `http://host.docker.internal:3000`.
 
-**Produktion:** alle drei Dienste in Docker. Der DS erreicht das Backend über `http://app:3000`. Für den Browser braucht es einen Reverse-Proxy (TLS) vor `app` und `onlyoffice`. Das ist nicht Teil von v1, ein Hinweis in der README genügt.
+**Produktion:** `docker compose --profile prod up -d --build` startet db, onlyoffice und app. Der DS erreicht das Backend über `http://app:3000`, das Backend den DS über `http://onlyoffice`. Für den Browser braucht es einen Reverse-Proxy (TLS) vor `app` und `onlyoffice`; Beispiel, Updates sowie Backup und Wiederherstellung stehen in der README.
 
 ### 3.5 Konfiguration (`.env`)
 
@@ -1035,16 +1035,16 @@ Derselbe Dialog dient für „Dokument versenden“, „Erneut versenden“, „
 
 ## 11. Umsetzungsreihenfolge
 
-| # | Meilenstein | Ergebnis |
-|---|---|---|
-| 1 | **Grundgerüst** | Monorepo, Docker Compose (db, onlyoffice), Backend-Skelett mit Config, Migrationen und Fehlerformat, Frontend-Skelett mit `AppShell`, Routing, Tokens/Theme, UI-Basiskomponenten |
-| 2 | **Einstellungen** | Community-Name, Logo, Theme, Mail-Konten (CRUD, Verschlüsselung, optional Verbindungstest) |
-| 3 | **Vorlagen** | Liste, Anlegen (PromptDialog), Bearbeiten mit `TagInput` und `MailConfigFields`, Löschen; Löschlogik Mail-Konto |
-| 4 | **Dokumente I** | Anlegen, Dateiablage, ONLYOFFICE-Integration (Config, File, Callback, Versionierung), Bearbeiten-/Ansehen-Seite, Titel ändern, Löschen |
-| 5 | **Dokumente II** | Volltextindex, Liste mit Suche, Tag-Filter, Infinite Scroll |
-| 6 | **Abschluss** | Force-Save, PDF-Erzeugung, `PdfStatusItem`, Tags |
-| 7 | **Mailversand** | `buildDispatchGroups`, Versand-Endpunkt, Hintergrundversand, `DispatchSection`, Bestätigungsdialog, Polling |
-| 8 | **Feinschliff** | Leer- und Fehlerzustände, Tests, README (Setup, Betrieb, Sicherheitshinweis) |
+| # | Meilenstein | Ergebnis | Stand |
+|---|---|---|---|
+| 1 | **Grundgerüst** | Monorepo, Docker Compose (db, onlyoffice), Backend-Skelett mit Config, Migrationen und Fehlerformat, Frontend-Skelett mit `AppShell`, Routing, Tokens/Theme, UI-Basiskomponenten | ✓ |
+| 2 | **Einstellungen** | Community-Name, Logo, Theme, Mail-Konten (CRUD, Verschlüsselung, optional Verbindungstest) | ✓ |
+| 3 | **Vorlagen** | Liste, Anlegen (PromptDialog), Bearbeiten mit `TagInput` und `MailConfigFields`, Löschen; Löschlogik Mail-Konto | ✓ |
+| 4 | **Dokumente I** | Anlegen, Dateiablage, ONLYOFFICE-Integration (Config, File, Callback, Versionierung), Bearbeiten-/Ansehen-Seite, Titel ändern, Löschen | ✓ |
+| 5 | **Dokumente II** | Volltextindex, Liste mit Suche, Tag-Filter, Infinite Scroll | ✓ |
+| 6 | **Abschluss** | Force-Save, PDF-Erzeugung, `PdfStatusItem`, Tags | ✓ |
+| 7 | **Mailversand** | `buildDispatchGroups`, Versand-Endpunkt, Hintergrundversand, `DispatchSection`, Bestätigungsdialog, Polling | ✓ |
+| 8 | **Feinschliff** | Leer- und Fehlerzustände, Mobilansicht, Produktiv-Image, README (Setup, Betrieb, Sicherheit, Backup) | ✓ |
 
 ---
 
@@ -1074,3 +1074,5 @@ Abgestimmt am 07.10.2026. Die IDs sind im Text referenziert.
 - **Weitere Vereinsmodule:** Mitglieder, Termine, Beschlüsse. Die Menüstruktur und die Bausteine (Listen, Tags, Mail-Konten) sind dafür wiederverwendbar.
 - **Mail:** Logo/Signatur im Mail-Layout, Versand an Verteiler/Gruppen.
 - **Suche:** Treffer-Ausschnitte (`ts_headline`) in der Liste.
+- **Startseite:** zuletzt bearbeitete Dokumente als Schnellzugriff (in v1 bewusst zurückgestellt).
+- **Mobil:** Die mobilen ONLYOFFICE-Editoren sind in der Community Edition nur lesend; mobiles Bearbeiten mit eigener Oberfläche bräuchte eine kommerzielle Lizenz. Bis dahin nutzt die App auch auf dem Handy die Desktop-Oberfläche.

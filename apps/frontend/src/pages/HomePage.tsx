@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { useSettings } from '../api/settings';
+import { useCommunityName, useSettings } from '../api/settings';
 import { SECTION_ITEMS } from '../app/navigation';
 import { PageContent } from '../components/layout/PageContent';
 import { CommunityLogo } from '../features/settings/CommunityLogo';
@@ -9,14 +9,15 @@ import styles from './HomePage.module.css';
 export function HomePage() {
   usePageTitle();
   const { data: settings } = useSettings();
+  const name = useCommunityName();
 
   return (
     <PageContent>
       <div className={styles.hero}>
-        {settings && (
+        {name && (
           <>
-            <CommunityLogo url={settings.logoUrl} name={settings.communityName} size="lg" />
-            <h1 className={styles.name}>{settings.communityName}</h1>
+            <CommunityLogo url={settings?.logoUrl ?? null} name={name} size="lg" />
+            <h1 className={styles.name}>{name}</h1>
           </>
         )}
       </div>

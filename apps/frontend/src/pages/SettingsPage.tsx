@@ -1,17 +1,19 @@
 import type { SettingsUpdate } from '@cm/shared';
+import { TriangleAlert } from 'lucide-react';
 import { useSettings, useUpdateSettings } from '../api/settings';
 import { PageContent } from '../components/layout/PageContent';
 import { PageHeader } from '../components/layout/PageHeader';
-import { Card, LoadingState, SaveStatus } from '../components/ui';
+import { Card, EmptyState, LoadingState, SaveStatus } from '../components/ui';
 import { MailAccountsCard } from '../features/mail/MailAccountsCard';
 import { AppearanceCard } from '../features/settings/AppearanceCard';
 import { GeneralSettingsCard } from '../features/settings/GeneralSettingsCard';
 import { useAutosave } from '../hooks/useAutosave';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { errorMessage } from '../lib/errors';
 
 export function SettingsPage() {
   usePageTitle('Einstellungen');
-  const { data: settings } = useSettings();
+  const { data: settings, error } = useSettings();
   const updateSettings = useUpdateSettings();
   const autosave = useAutosave((patch: SettingsUpdate) => updateSettings.mutateAsync(patch));
 
@@ -29,7 +31,15 @@ export function SettingsPage() {
           />
         ) : (
           <Card title="Allgemein">
-            <LoadingState />
+            {error ? (
+              <EmptyState
+                icon={<TriangleAlert />}
+                title="Einstellungen konnten nicht geladen werden"
+                description={errorMessage(error)}
+              />
+            ) : (
+              <LoadingState />
+            )}
           </Card>
         )}
         <AppearanceCard />

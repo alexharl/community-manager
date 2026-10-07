@@ -6,6 +6,15 @@ export const settingsKeys = {
   all: ['settings'] as const,
 };
 
+/** Anzeigename, falls die Einstellungen nicht geladen werden können. */
+export const FALLBACK_COMMUNITY_NAME = 'Community Manager';
+
+/** Community-Name für Kopf und Startseite: leer während des Ladens, Ersatzname bei Fehler. */
+export function useCommunityName(): string {
+  const { data, isError } = useSettings();
+  return data?.communityName ?? (isError ? FALLBACK_COMMUNITY_NAME : '');
+}
+
 export function useSettings() {
   return useQuery({
     queryKey: settingsKeys.all,

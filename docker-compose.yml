@@ -35,6 +35,33 @@ services:
       - onlyoffice_data:/var/www/onlyoffice/Data
       - onlyoffice_logs:/var/log/onlyoffice
 
+  # Produktivbetrieb: Backend + Frontend in einem Container (docker compose --profile prod up -d)
+  app:
+    build: .
+    image: community-manager:latest
+    profiles: ['prod']
+    restart: unless-stopped
+    init: true
+    depends_on:
+      db:
+        condition: service_healthy
+      onlyoffice:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-cm}:${POSTGRES_PASSWORD:-cm}@db:5432/${POSTGRES_DB:-cm}
+      APP_SECRET: ${APP_SECRET:?APP_SECRET fehlt in .env}
+      # Browser → Document Server (öffentliche Adresse, hinter dem Reverse-Proxy)
+      ONLYOFFICE_PUBLIC_URL: ${ONLYOFFICE_PUBLIC_URL:?ONLYOFFICE_PUBLIC_URL fehlt in .env}
+      ONLYOFFICE_JWT_SECRET: ${ONLYOFFICE_JWT_SECRET:?ONLYOFFICE_JWT_SECRET fehlt in .env}
+      # Container untereinander im Docker-Netz
+      ONLYOFFICE_INTERNAL_URL: http://onlyoffice
+      BACKEND_URL_FOR_ONLYOFFICE: http://app:3000
+      TZ: ${TZ:-Europe/Berlin}
+    ports:
+      - '${APP_PORT:-3080}:3000'
+    volumes:
+      - appdata:/data
+
   # Nur Entwicklung: fängt alle Mails ab, nichts geht nach außen (Weboberfläche auf :8025)
   mailpit:
     image: axllent/mailpit:v1.31.4
@@ -50,5 +77,6 @@ services:
 
 volumes:
   pgdata:
+  appdata:
   onlyoffice_data:
   onlyoffice_logs:

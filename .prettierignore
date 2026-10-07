@@ -2,3 +2,5 @@ node_modules
 dist
 data
 package-lock.json
+# Handgepflegte Prosa – Tabellen nicht automatisch umformatieren
+*.md
