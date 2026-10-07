@@ -32,6 +32,14 @@ export interface TemplatesTable {
   mail_account_id: Nullable<string>;
   mail_account_deleted: Generated<boolean>;
   mail_recipients: Generated<string[]>;
+  // Vorlageninhalt (Kap. 14.5); content_filename NULL = kein Inhalt
+  content_filename: Nullable<string>;
+  content_hash: Nullable<string>;
+  content_version: Generated<number>;
+  editor_key: Nullable<string>;
+  placeholders: Generated<string[]>;
+  requires_date: Generated<boolean>;
+  content_error: Nullable<string>;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }
@@ -57,6 +65,8 @@ export interface DocumentsTable {
   mail_recipients: Generated<string[]>;
   pdf_version: Nullable<number>;
   pdf_created_at: Nullable<Date>;
+  /** Sitzungsdatum (JJJJ-MM-TT), falls beim Anlegen abgefragt. */
+  reference_date: Nullable<string>;
   created_at: Generated<Date>;
   edited_at: Generated<Date>;
   updated_at: Generated<Date>;

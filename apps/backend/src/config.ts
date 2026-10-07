@@ -3,24 +3,32 @@ import { dirname, join, resolve } from 'node:path';
 import { parseEnv } from 'node:util';
 import { z } from 'zod';
 
-const EnvSchema = z.object({
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  HOST: z.string().default('0.0.0.0'),
-  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
-  DATABASE_URL: z.string().min(1),
-  DATA_DIR: z.string().min(1),
-  APP_SECRET: z
-    .string()
-    .refine(
-      (value) => Buffer.from(value, 'base64').length === 32,
-      'muss 32 Byte (base64) lang sein',
-    ),
-  ONLYOFFICE_PUBLIC_URL: z.url(),
-  ONLYOFFICE_INTERNAL_URL: z.url(),
-  ONLYOFFICE_JWT_SECRET: z.string().min(16),
-  BACKEND_URL_FOR_ONLYOFFICE: z.url(),
-  FRONTEND_DIST_DIR: z.string().optional(),
-});
+const EnvSchema = z
+  .object({
+    NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+    HOST: z.string().default('0.0.0.0'),
+    PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+    DATABASE_URL: z.string().min(1),
+    DATA_DIR: z.string().min(1),
+    APP_SECRET: z
+      .string()
+      .refine(
+        (value) => Buffer.from(value, 'base64').length === 32,
+        'muss 32 Byte (base64) lang sein',
+      ),
+    ONLYOFFICE_PUBLIC_URL: z.url(),
+    ONLYOFFICE_INTERNAL_URL: z.url(),
+    ONLYOFFICE_JWT_SECRET: z.string().min(16),
+    BACKEND_URL_FOR_ONLYOFFICE: z.url(),
+    FRONTEND_DIST_DIR: z.string().optional(),
+    // Veranstaltungen für smarte Vorlagen (Kap. 14.3); ohne Angabe bleiben die Listen leer
+    EVENTS_SOURCE: z.enum(['none', 'wp-fullcalendar']).default('none'),
+    EVENTS_URL: z.preprocess((value) => (value === '' ? undefined : value), z.url().optional()),
+  })
+  .refine((env) => env.EVENTS_SOURCE === 'none' || env.EVENTS_URL, {
+    message: 'EVENTS_URL fehlt für die gewählte EVENTS_SOURCE',
+    path: ['EVENTS_URL'],
+  });
 
 export type Config = ReturnType<typeof loadConfig>;
 
@@ -70,5 +78,6 @@ export function loadConfig() {
       backendUrl: trimSlash(env.BACKEND_URL_FOR_ONLYOFFICE),
     },
     frontendDistDir: env.FRONTEND_DIST_DIR ? resolve(baseDir, env.FRONTEND_DIST_DIR) : undefined,
+    events: { source: env.EVENTS_SOURCE, url: env.EVENTS_URL },
   };
 }

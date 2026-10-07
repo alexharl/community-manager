@@ -2,14 +2,14 @@ import type { EditorConfigResponse, EditorMode } from '@cm/shared';
 import { DocumentEditor, type DocumentEditorProps } from '@onlyoffice/document-editor-react';
 import { RotateCw, TriangleAlert } from 'lucide-react';
 import { useCallback, useState } from 'react';
-import { useEditorConfig } from '../../api/documents';
+import { useEditorConfig, type EditorSource } from '../../api/editor';
 import { Button, EmptyState, LoadingState } from '../../components/ui';
 import { errorMessage } from '../../lib/errors';
 import { useTheme } from '../../theme/context';
 import styles from './OnlyOfficeEditor.module.css';
 
 interface OnlyOfficeEditorProps {
-  documentId: string;
+  source: EditorSource;
   mode: EditorMode;
 }
 
@@ -19,13 +19,14 @@ const editorKey = (response: EditorConfigResponse | undefined) =>
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * Bindet den ONLYOFFICE-Editor ein (Bearbeiten oder Ansehen), inkl. Lade- und Fehlerzustand.
+ * Bindet den ONLYOFFICE-Editor ein (Bearbeiten oder Ansehen) – für Dokumente und Vorlageninhalte,
+ * inkl. Lade- und Fehlerzustand.
  * Das Overlay verschwindet, sobald die Editor-Oberfläche steht – Meldungen von ONLYOFFICE
  * bleiben so immer sichtbar. `data-ready` markiert das fertig geladene Dokument.
  */
-export function OnlyOfficeEditor({ documentId, mode }: OnlyOfficeEditorProps) {
+export function OnlyOfficeEditor({ source, mode }: OnlyOfficeEditorProps) {
   const { resolved } = useTheme();
-  const { data, error, refetch } = useEditorConfig(documentId, mode, resolved);
+  const { data, error, refetch } = useEditorConfig(source, mode, resolved);
   const [appReady, setAppReady] = useState(false);
   const [documentReady, setDocumentReady] = useState(false);
   const [editorError, setEditorError] = useState<string | null>(null);
@@ -85,7 +86,7 @@ export function OnlyOfficeEditor({ documentId, mode }: OnlyOfficeEditorProps) {
         // Eigener Wrapper: ONLYOFFICE ersetzt das Platzhalter-div durch ein iframe
         <div key={attempt} className={styles.frame}>
           <DocumentEditor
-            id={`onlyoffice-${mode}-${documentId}`}
+            id={`onlyoffice-${source.kind}-${mode}-${source.id}`}
             documentServerUrl={data.documentServerUrl}
             config={data.config as DocumentEditorProps['config']}
             height="100%"

@@ -7,7 +7,7 @@ import { AppError, notFound } from '../../lib/errors';
 import { buildMailContent, type MailContent } from '../../lib/mail-content';
 import { createTransport } from '../../lib/mailer';
 import { ensurePdfLocked } from '../documents/pdf';
-import { documentLocks } from '../documents/runtime';
+import { fileLocks } from '../onlyoffice/runtime';
 import { docxPath, pdfPath } from '../documents/storage';
 import { getSmtpAccount, type SmtpAccount } from '../mail-accounts/service';
 import { getSettings } from '../settings/service';
@@ -106,7 +106,7 @@ export async function createDispatch(
   const { communityName } = await getSettings(db);
 
   // Snapshot unter der Sperre: PDF, DOCX und Version gehören garantiert zusammen
-  const snapshot = await documentLocks.run(documentId, async () => {
+  const snapshot = await fileLocks.run(documentId, async () => {
     const pdf = await ensurePdfLocked(app, documentId);
     const files = await db
       .selectFrom('documents')

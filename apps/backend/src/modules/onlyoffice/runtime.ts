@@ -1,8 +1,11 @@
 import { KeyedMutex } from '../../lib/mutex';
-import { ForceSaveWaiters } from '../onlyoffice/force-save-waiters';
+import { ForceSaveWaiters } from './force-save-waiters';
 
-/** Prozessweite Sperre je Dokument: Dateischreiben, PDF-Erzeugung und Löschen nie gleichzeitig. */
-export const documentLocks = new KeyedMutex();
+/**
+ * Prozessweite Sperre je bearbeitbarer Datei: Schreiben, PDF-Erzeugung und Löschen nie gleichzeitig.
+ * Schlüssel: Dokument-ID bzw. `template:<id>` für Vorlageninhalte.
+ */
+export const fileLocks = new KeyedMutex();
 
 /** Wartende „Abschließen“-Aufrufe, aufgelöst durch den Callback mit Status 6/7. */
 export const forceSaveWaiters = new ForceSaveWaiters();

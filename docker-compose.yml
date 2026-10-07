@@ -57,6 +57,9 @@ services:
       ONLYOFFICE_INTERNAL_URL: http://onlyoffice
       BACKEND_URL_FOR_ONLYOFFICE: http://app:3000
       TZ: ${TZ:-Europe/Berlin}
+      # Veranstaltungen für smarte Vorlagen (optional)
+      EVENTS_SOURCE: ${EVENTS_SOURCE:-none}
+      EVENTS_URL: ${EVENTS_URL:-}
     ports:
       - '${APP_PORT:-3080}:3000'
     volumes:

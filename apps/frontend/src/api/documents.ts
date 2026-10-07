@@ -1,9 +1,9 @@
 import type {
+  DocumentCreate,
+  DocumentCreateResult,
   DocumentDetail,
   DocumentPatch,
   DocumentSummary,
-  EditorConfigResponse,
-  EditorMode,
   Page,
   PdfInfo,
 } from '@cm/shared';
@@ -15,7 +15,6 @@ import {
   useQueryClient,
   type QueryClient,
 } from '@tanstack/react-query';
-import type { ResolvedTheme } from '../theme/theme';
 import { api } from './client';
 import { suggestionKeys } from './tags';
 
@@ -25,8 +24,6 @@ export const documentKeys = {
   list: (filter: DocumentFilter) =>
     ['documents', 'list', filter.q, [...filter.tags].sort()] as const,
   detail: (id: string) => ['documents', 'detail', id] as const,
-  editorConfig: (id: string, mode: EditorMode, theme: ResolvedTheme) =>
-    ['documents', 'editor-config', id, mode, theme] as const,
 };
 
 export interface DocumentFilter {
@@ -63,21 +60,6 @@ export function useDocument(id: string, { alwaysFresh = false }: { alwaysFresh?:
   });
 }
 
-/**
- * Editor-Konfiguration enthält den aktuellen ONLYOFFICE-Key → nie aus dem Cache wiederverwenden
- * und während der Sitzung nicht neu laden (das würde den Editor neu starten).
- */
-export function useEditorConfig(id: string, mode: EditorMode, theme: ResolvedTheme) {
-  return useQuery({
-    queryKey: documentKeys.editorConfig(id, mode, theme),
-    queryFn: () =>
-      api<EditorConfigResponse>(`/documents/${id}/editor-config?mode=${mode}&theme=${theme}`),
-    gcTime: 0,
-    staleTime: Infinity,
-    refetchOnWindowFocus: false,
-  });
-}
-
 /** Listen, Tag-Vorschläge und Empfänger können sich mit jeder Dokumentänderung ändern. */
 function invalidateLists(queryClient: QueryClient) {
   void queryClient.invalidateQueries({ queryKey: documentKeys.lists });
@@ -88,10 +70,11 @@ function invalidateLists(queryClient: QueryClient) {
 export function useCreateDocument() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (templateId: string | null) =>
-      api<DocumentDetail>('/documents', { method: 'POST', body: { templateId } }),
-    onSuccess: (doc) => {
-      queryClient.setQueryData(documentKeys.detail(doc.id), doc);
+    /** Bei smarten Vorlagen mit Sitzungsdatum; Antwort enthält ggf. Hinweise (Kap. 14.4). */
+    mutationFn: (input: DocumentCreate) =>
+      api<DocumentCreateResult>('/documents', { method: 'POST', body: input }),
+    onSuccess: ({ warnings: _warnings, ...doc }) => {
+      queryClient.setQueryData<DocumentDetail>(documentKeys.detail(doc.id), doc);
       invalidateLists(queryClient);
     },
   });

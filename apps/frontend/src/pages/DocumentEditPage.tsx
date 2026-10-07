@@ -62,7 +62,7 @@ export function DocumentEditPage() {
         }
       />
       <PageContent width="full">
-        <OnlyOfficeEditor documentId={id} mode="edit" />
+        <OnlyOfficeEditor source={{ kind: 'document', id }} mode="edit" />
       </PageContent>
     </>
   );

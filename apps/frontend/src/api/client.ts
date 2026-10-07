@@ -39,14 +39,28 @@ export async function api<T>(
     throw new ApiError(0, 'NETWORK', 'Server nicht erreichbar.');
   }
 
-  if (!response.ok) {
-    const data = (await response.json().catch(() => null)) as ApiErrorBody | null;
-    throw new ApiError(
-      response.status,
-      data?.error.code ?? 'HTTP_ERROR',
-      data?.error.message ?? `Anfrage fehlgeschlagen (${response.status}).`,
-    );
-  }
+  if (!response.ok) throw await toApiError(response);
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
+}
+
+/** Lädt eine Datei (z. B. eine PDF) – Fehler wie bei `api` als `ApiError`. */
+export async function apiBlob(path: string): Promise<Blob> {
+  let response: Response;
+  try {
+    response = await fetch(`/api${path}`);
+  } catch {
+    throw new ApiError(0, 'NETWORK', 'Server nicht erreichbar.');
+  }
+  if (!response.ok) throw await toApiError(response);
+  return response.blob();
+}
+
+async function toApiError(response: Response): Promise<ApiError> {
+  const data = (await response.json().catch(() => null)) as ApiErrorBody | null;
+  return new ApiError(
+    response.status,
+    data?.error.code ?? 'HTTP_ERROR',
+    data?.error.message ?? `Anfrage fehlgeschlagen (${response.status}).`,
+  );
 }

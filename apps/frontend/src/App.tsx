@@ -9,6 +9,7 @@ import { ErrorPage } from './pages/ErrorPage';
 import { HomePage } from './pages/HomePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { TemplateContentPage } from './pages/TemplateContentPage';
 import { TemplatePage } from './pages/TemplatePage';
 
 // Routen gemäß Spezifikation Kap. 7.2
@@ -22,6 +23,7 @@ const router = createBrowserRouter([
       { path: 'documents', element: <DocumentsPage /> },
       { path: 'documents/settings', element: <DocumentSettingsPage /> },
       { path: 'documents/templates/:id', element: <TemplatePage /> },
+      { path: 'documents/templates/:id/content', element: <TemplateContentPage /> },
       { path: 'documents/:id', element: <DocumentViewPage /> },
       { path: 'documents/:id/edit', element: <DocumentEditPage /> },
       { path: 'documents/:id/finalize', element: <DocumentFinalizePage /> },

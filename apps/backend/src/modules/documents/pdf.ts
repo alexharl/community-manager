@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { notFound } from '../../lib/errors';
 import { fileExists, writeFileAtomic } from '../../lib/files';
 import { convertDocument, toInternalUrl } from '../onlyoffice/client';
-import { documentLocks } from './runtime';
+import { fileLocks } from '../onlyoffice/runtime';
 import { pdfPath } from './storage';
 
 /**
@@ -12,10 +12,10 @@ import { pdfPath } from './storage';
  * nicht ändern, und parallele Aufrufe warten auf dieselbe Erzeugung.
  */
 export function ensurePdf(app: FastifyInstance, documentId: string): Promise<PdfInfo> {
-  return documentLocks.run(documentId, () => ensurePdfLocked(app, documentId));
+  return fileLocks.run(documentId, () => ensurePdfLocked(app, documentId));
 }
 
-/** Wie `ensurePdf`, aber nur innerhalb von `documentLocks.run` für dieses Dokument aufrufen. */
+/** Wie `ensurePdf`, aber nur innerhalb von `fileLocks.run` für dieses Dokument aufrufen. */
 export async function ensurePdfLocked(app: FastifyInstance, documentId: string): Promise<PdfInfo> {
   const doc = await app.db
     .selectFrom('documents')

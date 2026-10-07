@@ -57,7 +57,7 @@ export function DocumentViewPage() {
       />
       <DocumentMeta document={document} />
       <PageContent width="full">
-        <OnlyOfficeEditor documentId={id} mode="view" />
+        <OnlyOfficeEditor source={{ kind: 'document', id }} mode="view" />
       </PageContent>
 
       <ConfirmDialog

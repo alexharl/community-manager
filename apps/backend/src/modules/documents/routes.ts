@@ -41,8 +41,8 @@ export async function documentRoutes(app: FastifyInstance) {
   app.get('/documents', (request) => listDocuments(app.db, parse(ListQuerySchema, request.query)));
 
   app.post('/documents', async (request, reply) => {
-    const { templateId } = parse(DocumentCreateSchema, request.body);
-    return reply.status(201).send(await createDocument(app.db, dataDir, templateId));
+    const input = parse(DocumentCreateSchema, request.body);
+    return reply.status(201).send(await createDocument(app, input));
   });
 
   app.get('/documents/:id', (request) => getDocument(app.db, dataDir, documentId(request.params)));
@@ -64,7 +64,12 @@ export async function documentRoutes(app: FastifyInstance) {
   app.get('/documents/:id/editor-config', async (request) => {
     const { mode, theme } = parse(EditorQuerySchema, request.query);
     const doc = await getDocumentFiles(app.db, documentId(request.params));
-    return buildEditorConfig(app.config.onlyoffice, doc, mode, theme);
+    return buildEditorConfig(
+      app.config.onlyoffice,
+      { kind: 'documents', id: doc.id, title: doc.title, editorKey: doc.editor_key },
+      mode,
+      theme,
+    );
   });
 
   app.post('/documents/:id/forcesave', (request) => forceSave(app, documentId(request.params)));

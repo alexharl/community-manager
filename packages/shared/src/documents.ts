@@ -51,8 +51,15 @@ export interface EditorConfigResponse {
 
 export const DocumentCreateSchema = z.object({
   templateId: z.uuid().nullable(),
+  /** Sitzungsdatum (JJJJ-MM-TT) für datumsabhängige Vorlagen; Standard: heute. */
+  referenceDate: z.iso.date('Ungültiges Datum.').optional(),
 });
 export type DocumentCreate = z.input<typeof DocumentCreateSchema>;
+
+/** Antwort beim Anlegen: das Dokument und ggf. Hinweise (z. B. Veranstaltungen nicht erreichbar). */
+export interface DocumentCreateResult extends DocumentDetail {
+  warnings: string[];
+}
 
 export const DocumentTitleSchema = z.string().trim().min(1, 'Titel darf nicht leer sein.').max(200);
 

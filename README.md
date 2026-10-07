@@ -70,8 +70,13 @@ Wichtige Einstellungen in der `.env`:
 | `APP_SECRET`, `ONLYOFFICE_JWT_SECRET` | Secrets (siehe [Sicherheit](#sicherheit)) |
 | `POSTGRES_*` | Zugangsdaten der Datenbank |
 | `TZ` | Zeitzone für Titel und Ablageordner (Standard `Europe/Berlin`) |
+| `EVENTS_SOURCE`, `EVENTS_URL` | Veranstaltungen für smarte Vorlagen, z. B. `wp-fullcalendar` und die `admin-ajax.php`-Adresse der Vereinswebseite (Standard `none` = keine) |
 
 Die Adressen der Container untereinander (`http://onlyoffice`, `http://app:3000`) setzt Docker Compose selbst.
+
+### Smarte Vorlagen
+
+Vorlagen können einen Inhalt mit Platzhaltern haben (z. B. `{titel}`, `{#tage(-6, -1)}…{/}`), der beim Anlegen eines Dokuments einmalig befüllt wird – inklusive Veranstaltungen der Vereinswebseite mit Link. Die Platzhalter-Hilfe steht direkt in der Vorlage; Details in [Kapitel 14 der Spezifikation](docs/SPEZIFIKATION.md#14-smarte-vorlagen-v11). Für Veranstaltungen braucht der App-Container Zugriff auf die konfigurierte Webseite; ist sie nicht erreichbar, entsteht das Dokument trotzdem (mit Hinweis).
 
 ### Reverse-Proxy und HTTPS
 
@@ -95,7 +100,7 @@ Datenbank-Migrationen laufen beim Start automatisch.
 
 ### Backup und Wiederherstellung
 
-Zu sichern sind drei Dinge, die zusammengehören: die **Datenbank**, die **Dateien** (DOCX, PDF, Logo im Volume `appdata`) und die **`.env`**.
+Zu sichern sind drei Dinge, die zusammengehören: die **Datenbank**, die **Dateien** (DOCX, PDF, Vorlageninhalte, Logo im Volume `appdata`) und die **`.env`**.
 
 ```bash
 # Sichern

@@ -20,6 +20,7 @@ import {
 import { useAutosave } from '../../hooks/useAutosave';
 import { MailConfigFields } from '../mail/MailConfigFields';
 import { applyMailPatch, type MailPatch } from '../mail/mailPatch';
+import { TemplateContentSection } from './TemplateContentSection';
 import styles from './TemplateEditor.module.css';
 
 /** Bearbeitungsansicht einer Vorlage mit Autosave (Spezifikation Kap. 7.4.5). */
@@ -94,10 +95,7 @@ export function TemplateEditor({ template }: { template: Template }) {
               <Text size="sm" strong>
                 Inhalt
               </Text>
-              <div className={styles.contentPlaceholder}>
-                Der Vorlageninhalt folgt in einer späteren Version. Neue Dokumente starten vorerst
-                leer.
-              </div>
+              <TemplateContentSection template={template} />
             </Stack>
             <div className={styles.mailSection}>
               <Switch

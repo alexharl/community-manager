@@ -23,6 +23,7 @@ Verwaltungstool für Vereinsangelegenheiten. **Version 1:** Erstellung, Ablage, 
 11. [Umsetzungsreihenfolge](#11-umsetzungsreihenfolge)
 12. [Entscheidungen](#12-entscheidungen)
 13. [Ausblick](#13-ausblick)
+14. [Smarte Vorlagen (v1.1)](#14-smarte-vorlagen-v11)
 
 ---
 
@@ -1070,9 +1071,137 @@ Abgestimmt am 07.10.2026. Die IDs sind im Text referenziert.
 ## 13. Ausblick
 
 - **Authentifizierung:** Login, Benutzer mit Rollen. Der ONLYOFFICE-`user` wird dann der echte Benutzer (sichtbar im Co-Editing). Ein Audit-Feld „versendet von“ kommt an die Versendungen.
-- **Vorlageninhalt:** pro Vorlage eine DOCX (bearbeitbar über denselben `OnlyOfficeEditor`), die beim Anlegen mit Platzhaltern befüllt wird (z. B. Datum, Community-Name, später Teilnehmerliste), etwa per `docxtemplater`. Ablage unter `DATA_DIR/templates/<id>.docx`. `POST /documents` erzeugt dann aus der Vorlage statt aus `blank.docx`.
+- **Vorlageninhalt:** umgesetzt als „Smarte Vorlagen“, siehe [Kapitel 14](#14-smarte-vorlagen-v11). Denkbare weitere Datenquellen: Schichtplan (AV/Mischer/Theke vorbelegen), Teilnehmerliste.
 - **Weitere Vereinsmodule:** Mitglieder, Termine, Beschlüsse. Die Menüstruktur und die Bausteine (Listen, Tags, Mail-Konten) sind dafür wiederverwendbar.
 - **Mail:** Logo/Signatur im Mail-Layout, Versand an Verteiler/Gruppen.
 - **Suche:** Treffer-Ausschnitte (`ts_headline`) in der Liste.
 - **Startseite:** zuletzt bearbeitete Dokumente als Schnellzugriff (in v1 bewusst zurückgestellt).
 - **Mobil:** Die mobilen ONLYOFFICE-Editoren sind in der Community Edition nur lesend; mobiles Bearbeiten mit eigener Oberfläche bräuchte eine kommerzielle Lizenz. Bis dahin nutzt die App auch auf dem Handy die Desktop-Oberfläche.
+
+---
+
+## 14. Smarte Vorlagen (v1.1)
+
+Vorlagen bekommen einen eigenen Inhalt (DOCX), der beim Anlegen eines Dokuments mit Daten befüllt wird: Sitzungsdatum, Tage relativ dazu und Veranstaltungen aus einer externen Quelle. Leitbeispiel ist das Protokoll mit Rückblick und Vorblick.
+
+### 14.1 Entscheidungen
+
+| ID | Entscheidung |
+|---|---|
+| **S1** | Der Vorlageninhalt ist eine DOCX mit Platzhaltern ([docxtemplater](https://docxtemplater.com), MIT). Gestaltet wird er im ONLYOFFICE-Editor oder als DOCX hochgeladen. |
+| **S2** | Daten werden **einmalig beim Anlegen** eingesetzt. Danach ist es ein normales Dokument ohne Verbindung zur Vorlage. |
+| **S3** | Ob ein Sitzungsdatum abgefragt wird, **erkennt die App an den Platzhaltern**: Kommen datumsabhängige Platzhalter vor, zeigt „Neues Dokument“ ein Datumsfeld (vorbelegt mit heute). Es gibt nichts zusätzlich einzustellen. |
+| **S4** | Zeiträume legt die Vorlage selbst fest. Protokoll: Rückblick `tage(-6, -1)` (−6 bis gestern, aufsteigend), Vorblick `tage(0, 7)` (heute bis zum selben Wochentag nächste Woche). |
+| **S5** | Je Veranstaltung ein eigener Aufzählungspunkt mit eigenen Unterpunkten. Ohne Veranstaltung erscheint ein leerer Punkt mit Unterpunkten (Filter `oderLeer`). |
+| **S6** | Datumsformat der Tage: `TT.MM` (`{datum}:` → „07.10:“). |
+| **S7** | Veranstaltungen kommen aus einer **austauschbaren Datenquelle** (Schnittstelle `EventSource`). Erste Umsetzung: WordPress-Plugin „WP FullCalendar“ des Kunstvereins Nürnberg. |
+| **S8** | Hinter dem Veranstaltungstitel steht ein echter Link „Webseite“. Umgesetzt durch eigene Nachbearbeitung der DOCX, weil das Link-Modul von docxtemplater kostenpflichtig ist. |
+
+### 14.2 Platzhalter-Sprache
+
+| Schreibweise | Bedeutung |
+|---|---|
+| `{name}` | Wert einsetzen. Der Platzhalter darf formatiert sein (fett, Überschrift …), aber nicht über einen Absatz hinausreichen. |
+| `{#liste}` … `{/}` | Für jeden Eintrag wiederholen. Stehen die Tags allein in einem Absatz, verschwindet dieser Absatz im Ergebnis. Statt `{/}` geht auch der exakte Ausdruck (`{/liste}`). |
+| `{^liste}` … `{/}` | Nur, wenn die Liste leer ist. |
+| `liste \| oderLeer` | Die Liste – oder, wenn sie leer ist, ein einzelner leerer Eintrag. |
+
+**Daten beim Anlegen:**
+
+| Platzhalter | Inhalt | Beispiel |
+|---|---|---|
+| `verein` | Community-Name | TSV Musterstadt |
+| `titel` | Titel des neuen Dokuments | Vorstandssitzung 07.10.2026 |
+| `vorlage` | Name der Vorlage | Vorstandssitzung |
+| `datum`, `datumLang`, `wochentag` | Sitzungsdatum | 07.10 · 07.10.2026 · Mittwoch |
+| `tage(von, bis)` | Tage relativ zum Sitzungsdatum, beide Grenzen inklusive, in der Reihenfolge von → bis | `tage(-6, -1)` |
+
+Je Tag: `wochentag`, `datum`, `datumLang`, `veranstaltungen`.
+Je Veranstaltung: `titel`, `uhrzeit` (z. B. „20:00“, leer bei ganztägigen), `webseite` (Link „Webseite“, leer ohne URL).
+
+**Datumsabhängig** (→ Datumsfeld, S3) ist eine Vorlage, sobald ein Platzhalter `tage`, `datum`, `datumLang` oder `wochentag` verwendet.
+
+**Beispiel Protokoll** (so im Editor gestaltet; in Klammern das Absatzformat):
+
+```
+Rückblick                                   (Überschrift 2)
+{#tage(-6, -1)}
+{wochentag} {datum}:                        (Überschrift 3)
+{#veranstaltungen | oderLeer}
+• {titel} {webseite}                        (Aufzählung, Ebene 1)
+    ◦ AV:                                   (Aufzählung, Ebene 2)
+    ◦ Mischer:
+    ◦ Theke:
+{/}
+{/}
+Vorblick                                    (Überschrift 2)
+{#tage(0, 7)}
+… gleicher Block …
+{/}
+```
+
+**Hinweis Autokorrektur:** ONLYOFFICE ersetzt im Deutschen gerade Anführungszeichen durch typografische. Die Platzhalter-Sprache kommt deshalb ohne Texte in Anführungszeichen aus; Formate stehen als fertige Felder bereit (`datum`, `datumLang`).
+
+### 14.3 Veranstaltungen (Datenquelle)
+
+```ts
+interface CalendarEvent { title: string; date: string /* JJJJ-MM-TT */; time: string | null; url: string | null }
+interface EventSource { listEvents(from: string, to: string): Promise<CalendarEvent[]> }
+```
+
+Konfiguration über `.env`: `EVENTS_SOURCE=wp-fullcalendar` und `EVENTS_URL=<admin-ajax.php-Adresse>`. Ohne Konfiguration sind die Veranstaltungslisten leer; alles andere funktioniert unverändert.
+
+**WP FullCalendar** (`GET <EVENTS_URL>?action=WP_FullCalendar&type=event&full=1&long_events=1&start=…&end=…`):
+
+- Antwort: JSON-Array, ausgeliefert als `text/html`. Verwendet werden nur `title`, `start` (lokale Zeit ohne Zeitzone, z. B. `2026-09-29T20:00:00`) und `url`.
+- Das Plugin liefert immer die **Monatsansicht** des Monats, in dem der angefragte Zeitraum liegt; `start`/`end` begrenzen nicht exakt. Daher wird je betroffenem Monat einmal abgefragt (`start` = Monatserster, `end` = Monatsletzter), dann lokal auf den Zeitraum gefiltert und über `event_id` + `start` entdoppelt.
+- HTML-Entities in Titeln werden dekodiert. Mehrtägige Veranstaltungen erscheinen am Starttag.
+
+**Fehlertoleranz:** Zeitlimit 10 s. Schlägt die Abfrage fehl, wird das Dokument trotzdem angelegt (ohne Veranstaltungen); die Oberfläche zeigt einen Hinweis. Abfragen werden je Anlegevorgang zwischengespeichert.
+
+### 14.4 Abläufe
+
+1. **Inhalt anlegen:** „Inhalt gestalten“ legt eine leere DOCX an (`DATA_DIR/templates/<id>.docx`) und öffnet sie im Editor. Alternativ „DOCX hochladen“ (max. 10 MB, muss eine gültige DOCX sein).
+2. **Bearbeiten:** eigene Seite mit dem ONLYOFFICE-Editor; „Fertig“ speichert sofort (Force-Save wie beim Abschließen) und führt zur Vorlage zurück. Versionierung, Callback und Schlüsselwechsel wie bei Dokumenten (Kap. 5.2).
+3. **Prüfung bei jedem Speichern/Hochladen:** Die Vorlage wird eingelesen. Gespeichert werden die gefundenen Platzhalter, ob sie datumsabhängig ist und ggf. eine **verständliche Fehlermeldung** (z. B. eine nicht geschlossene Schleife).
+4. **Neues Dokument:** Bei datumsabhängigen Vorlagen fragt der Dialog das Sitzungsdatum ab. `POST /documents { templateId, referenceDate }` befüllt den Vorlageninhalt (asynchron, Veranstaltungen je `tage()`-Aufruf), setzt Links ein, extrahiert den Volltext und legt das Dokument an. Der Titel nutzt das Sitzungsdatum. Vorlagen ohne Inhalt erzeugen wie bisher ein leeres Dokument.
+5. **Vorschau:** Erzeugt aus der Vorlage eine PDF mit dem heutigen Datum, ohne ein Dokument anzulegen.
+
+### 14.5 Datenmodell (Migration 002)
+
+```sql
+ALTER TABLE templates
+  ADD COLUMN content_filename text,                        -- NULL = kein Inhalt
+  ADD COLUMN content_hash     text,
+  ADD COLUMN content_version  integer NOT NULL DEFAULT 0,
+  ADD COLUMN editor_key       text,
+  ADD COLUMN placeholders     text[]  NOT NULL DEFAULT '{}',
+  ADD COLUMN requires_date    boolean NOT NULL DEFAULT false,
+  ADD COLUMN content_error    text;
+ALTER TABLE documents
+  ADD COLUMN reference_date date;                          -- Sitzungsdatum, falls abgefragt
+```
+
+### 14.6 API
+
+| Methode & Pfad | Zweck |
+|---|---|
+| `POST /templates/:id/content` | leeren Inhalt anlegen (falls noch keiner existiert) |
+| `PUT /templates/:id/content` | DOCX hochladen (multipart) |
+| `GET /templates/:id/editor-config?theme=` | Editor-Konfiguration für den Vorlageninhalt |
+| `POST /templates/:id/forcesave` | „Fertig“ im Vorlagen-Editor |
+| `GET /templates/:id/preview?date=` | Vorschau als PDF |
+| `GET /onlyoffice/templates/:id/file`, `POST …/callback`, `GET …/preview-file` | nur für den Document Server |
+| `POST /documents` | zusätzlich `referenceDate` (JJJJ-MM-TT); Antwort zusätzlich `warnings: string[]` |
+
+`Template` erhält `content: { exists, version, requiresDate, placeholders, error }`.
+
+### 14.7 Oberfläche
+
+- **Vorlage bearbeiten → Inhalt:** ohne Inhalt die Buttons „Inhalt gestalten“ und „DOCX hochladen“. Mit Inhalt:
+  - Status „Platzhalter in Ordnung“ bzw. die Fehlermeldung, dazu ggf. „fragt beim Anlegen das Sitzungsdatum ab“.
+  - Buttons „Inhalt bearbeiten“, „Vorschau“, „DOCX hochladen“.
+  - Aufklappbare Platzhalter-Hilfe mit Syntax, Datenfeldern und dem Protokoll-Beispiel.
+- **Inhalt bearbeiten** (`/documents/templates/:id/content`): Kopf mit Zurück, Titel „Inhalt: <Vorlage>“ und „Fertig“; darunter der Editor.
+- **Neues Dokument:** Bei einer datumsabhängigen Vorlage folgt ein zweiter Schritt mit dem Feld „Sitzungsdatum“ (vorbelegt mit heute), „Zurück“ und „Anlegen“.
+- **Hinweise beim Anlegen** (z. B. Veranstaltungen nicht erreichbar) erscheinen als Meldung.

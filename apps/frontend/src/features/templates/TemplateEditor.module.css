@@ -2,14 +2,6 @@
   max-width: 480px;
 }
 
-.contentPlaceholder {
-  padding: var(--space-4);
-  border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
 .mailSection {
   display: flex;
   flex-direction: column;

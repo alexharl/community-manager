@@ -1,22 +1,26 @@
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile } from 'node:fs/promises';
 import type {
+  DocumentCreateResult,
   DocumentDetail,
   DocumentPatchSchema,
   DocumentSummary,
   Page,
   PdfInfo,
 } from '@cm/shared';
+import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import type { z } from 'zod';
 import type { Db } from '../../db/db';
 import { BLANK_DOCX_PATH } from '../../lib/assets';
-import { docxContentHash } from '../../lib/docx';
+import { parseIsoDate, toIsoDate, today } from '../../lib/dates';
+import { docxContentHash, extractText } from '../../lib/docx';
 import { notFound } from '../../lib/errors';
 import { fileExists, removeFile, writeFileAtomic } from '../../lib/files';
 import { assertMailAccountExists, mailConfigColumns, toMailConfig } from '../../lib/mail-config';
+import { fileLocks } from '../onlyoffice/runtime';
+import { documentTitle, fillTemplate } from '../templates/content';
 import { decodeCursor, encodeCursor } from './cursor';
-import { documentLocks } from './runtime';
 import { toPrefixTsQuery } from './search';
 import {
   docxPath,
@@ -57,12 +61,6 @@ const DETAIL_COLUMNS = [
 const selectDetail = (db: Db) => db.selectFrom('documents').select(DETAIL_COLUMNS);
 type DetailRow = Awaited<ReturnType<ReturnType<typeof selectDetail>['executeTakeFirstOrThrow']>>;
 type SummaryRow = Pick<DetailRow, (typeof SUMMARY_COLUMNS)[number]>;
-
-const germanDate = new Intl.DateTimeFormat('de-DE', {
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric',
-});
 
 function toSummary(row: SummaryRow): DocumentSummary {
   return {
@@ -165,15 +163,23 @@ export async function listDocuments(
   };
 }
 
+export interface DocumentCreateInput {
+  templateId: string | null;
+  /** Sitzungsdatum (JJJJ-MM-TT) für datumsabhängige Vorlagen; sonst heute (Kap. 14.4) */
+  referenceDate?: string;
+}
+
 /**
  * Legt Datensatz und DOCX an (Kap. 5.1). Titel, Tags und Mail-Konfiguration
- * werden aus der Vorlage übernommen (Entscheidung A3, A5).
+ * werden aus der Vorlage übernommen (Entscheidung A3, A5); ein Vorlageninhalt wird
+ * befüllt (Kap. 14.4), sonst entsteht ein leeres Dokument.
  */
 export async function createDocument(
-  db: Db,
-  dataDir: string,
-  templateId: string | null,
-): Promise<DocumentDetail> {
+  app: FastifyInstance,
+  { templateId, referenceDate: requestedDate }: DocumentCreateInput,
+): Promise<DocumentCreateResult> {
+  const { db } = app;
+  const { dataDir } = app.config;
   const template = templateId
     ? await db.selectFrom('templates').selectAll().where('id', '=', templateId).executeTakeFirst()
     : null;
@@ -182,7 +188,8 @@ export async function createDocument(
   const id = randomUUID();
   // Millisekunden-genau aus JS, damit der Listen-Cursor exakt bleibt
   const now = new Date();
-  const title = `${template?.name ?? 'Dokument'} ${germanDate.format(now)}`;
+  const referenceDate = requestedDate ? parseIsoDate(requestedDate) : today();
+  const title = documentTitle(template?.name ?? 'Dokument', referenceDate);
   const { storagePath, baseName } = storageLocation(now, title, id);
   const stored: StoredDocument = {
     storage_path: storagePath,
@@ -190,7 +197,12 @@ export async function createDocument(
     pdf_filename: null,
   };
 
-  const content = await readFile(BLANK_DOCX_PATH);
+  // Vor dem Anlegen befüllen: Eine fehlerhafte Vorlage hinterlässt so keine halben Dokumente
+  const warnings: string[] = [];
+  const filled = template
+    ? await fillTemplate(app, template, { referenceDate, title, warnings })
+    : null;
+  const content = filled ?? (await readFile(BLANK_DOCX_PATH));
   await mkdir(folderPath(dataDir, storagePath), { recursive: true });
   await writeFileAtomic(docxPath(dataDir, stored), content);
 
@@ -204,6 +216,8 @@ export async function createDocument(
       template_id: template?.id ?? null,
       template_name: template?.name ?? null,
       content_hash: await docxContentHash(content),
+      content_text: filled ? await extractText(filled) : '',
+      reference_date: requestedDate || template?.requires_date ? toIsoDate(referenceDate) : null,
       editor_key: newEditorKey(id),
       tags: template?.tags ?? [],
       mail_enabled: template?.mail_enabled ?? false,
@@ -216,7 +230,7 @@ export async function createDocument(
     })
     .execute();
 
-  return getDocument(db, dataDir, id);
+  return { ...(await getDocument(db, dataDir, id)), warnings };
 }
 
 export async function updateDocument(
@@ -242,7 +256,7 @@ export async function updateDocument(
 
 /** Entfernt Datensatz (Versendungen per CASCADE) und danach DOCX und PDF (Kap. 4.5). */
 export async function deleteDocument(db: Db, dataDir: string, id: string): Promise<void> {
-  await documentLocks.run(id, async () => {
+  await fileLocks.run(id, async () => {
     const row = await db
       .deleteFrom('documents')
       .where('id', '=', id)

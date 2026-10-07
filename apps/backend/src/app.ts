@@ -9,6 +9,7 @@ import type { Db } from './db/db';
 import { errorBody, errorHandler } from './lib/errors';
 import { dispatchRoutes } from './modules/dispatches/routes';
 import { documentRoutes } from './modules/documents/routes';
+import { createEventSource, type EventSource } from './modules/events';
 import { healthRoutes } from './modules/health/routes';
 import { mailAccountRoutes } from './modules/mail-accounts/routes';
 import { onlyofficeRoutes } from './modules/onlyoffice/routes';
@@ -20,6 +21,8 @@ declare module 'fastify' {
   interface FastifyInstance {
     config: Config;
     db: Db;
+    /** Veranstaltungen für smarte Vorlagen (Kap. 14.3); `null` = nicht konfiguriert */
+    eventSource: EventSource | null;
   }
 }
 
@@ -37,6 +40,7 @@ export async function buildApp(config: Config, db: Db): Promise<FastifyInstance>
 
   app.decorate('config', config);
   app.decorate('db', db);
+  app.decorate('eventSource', createEventSource(config.events));
   app.addHook('onClose', () => db.destroy());
   app.setErrorHandler(errorHandler);
   await app.register(fastifyMultipart, { limits: { fileSize: LOGO_MAX_BYTES, files: 1 } });
