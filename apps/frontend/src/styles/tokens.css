@@ -49,6 +49,8 @@
   --color-danger-hover: #a3222e;
   --color-danger-soft: #fce8ea;
   --color-danger-contrast: #ffffff;
+  --color-highlight: #fdeaa0;
+  --color-highlight-text: #1b2330;
   --color-backdrop: rgb(15 20 30 / 0.45);
   --shadow-sm: 0 1px 2px rgb(16 24 40 / 0.06);
   --shadow: 0 1px 3px rgb(16 24 40 / 0.08), 0 1px 2px rgb(16 24 40 / 0.04);
@@ -78,6 +80,8 @@
   --color-danger-hover: #f4838c;
   --color-danger-soft: #3a1a1e;
   --color-danger-contrast: #1a0b0d;
+  --color-highlight: #5c4a12;
+  --color-highlight-text: #fbeec4;
   --color-backdrop: rgb(0 0 0 / 0.6);
   --shadow-sm: none;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.4);

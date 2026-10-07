@@ -1,5 +1,34 @@
 import { describe, expect, it } from 'vitest';
-import { toPrefixTsQuery } from './search';
+import { toPrefixTsQuery, toSnippet } from './search';
+
+describe('toSnippet', () => {
+  const start = '';
+  const end = '';
+
+  it('zerlegt den Ausschnitt in Text und Treffer und kennzeichnet Kürzungen mit „…“', () => {
+    const headline = `die ${start}Kassenprüfung${end} findet\nam 15. November statt`;
+    expect(toSnippet(headline, 'Protokoll der Sitzung …', '… Ende.')).toEqual([
+      { text: '… ', match: false },
+      { text: 'die ', match: false },
+      { text: 'Kassenprüfung', match: true },
+      { text: ' findet am 15. November statt', match: false },
+      { text: ' …', match: false },
+    ]);
+  });
+
+  it('ohne „…“, wenn der Ausschnitt den ganzen Text umfasst', () => {
+    const text = 'Kurzer Text zur Kasse';
+    expect(toSnippet(`Kurzer Text zur ${start}Kasse${end}`, text, text)).toEqual([
+      { text: 'Kurzer Text zur ', match: false },
+      { text: 'Kasse', match: true },
+    ]);
+  });
+
+  it('kein Ausschnitt ohne markierten Treffer (z. B. nur der Titel passt)', () => {
+    expect(toSnippet('Anfang des Textes ohne Treffer', 'Anfang', 'Textes')).toBeUndefined();
+    expect(toSnippet(null, null, null)).toBeUndefined();
+  });
+});
 
 describe('toPrefixTsQuery', () => {
   it('verknüpft Wörter als Präfixsuche mit UND', () => {

@@ -70,6 +70,27 @@
   font-size: var(--font-size-sm);
 }
 
+.detail {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+@media (max-width: 640px) {
+  /* Schmale Zeilen: eine Zeile mehr, damit der Treffer im Ausschnitt sichtbar bleibt */
+  .detail {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+}
+
 .meta {
   flex-shrink: 0;
   color: var(--color-text-muted);

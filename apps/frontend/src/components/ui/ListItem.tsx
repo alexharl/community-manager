@@ -7,6 +7,8 @@ interface ListItemProps {
   icon?: ReactNode;
   title: ReactNode;
   subtitle?: ReactNode;
+  /** Weitere Zeile unter dem Untertitel, z. B. ein Suchausschnitt (gekürzt auf 2–3 Zeilen). */
+  detail?: ReactNode;
   /** Rechtsbündige Zusatzinfo, z. B. ein Datum oder Status. */
   meta?: ReactNode;
   /** Eigene Aktionen (Buttons) – liegen außerhalb der klickbaren Fläche. */
@@ -26,6 +28,7 @@ export function ListItem({
   icon,
   title,
   subtitle,
+  detail,
   meta,
   trailing,
   to,
@@ -41,6 +44,7 @@ export function ListItem({
       <span className={styles.text}>
         <span className={styles.title}>{title}</span>
         {subtitle && <span className={styles.subtitle}>{subtitle}</span>}
+        {detail && <span className={styles.detail}>{detail}</span>}
       </span>
       {meta && <span className={styles.meta}>{meta}</span>}
     </>

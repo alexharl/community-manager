@@ -500,9 +500,13 @@ sequenceDiagram
 - **Suchausdruck** (Präfixsuche, damit schon Wortanfänge treffen): Eingabe in Wörter zerlegen, nur Buchstaben und Ziffern behalten (`\p{L}\p{N}`), jedes Wort als `<wort>:*`, verbunden mit `&`.
   Beispiel: `"Vorstand Kasse"` → `vorstand:* & kasse:*` → `to_tsquery('german', …)`. Die Funktion wird mit Vitest getestet.
 - **Stoppwörter:** Besteht die Eingabe nur aus deutschen Stoppwörtern (z. B. „die“), ist die Suchanfrage leer (`numnode = 0`). Dann wird nicht gefiltert, statt nichts zu finden.
+- **Suchausschnitt:** Bei aktiver Suche liefert jeder Treffer `snippet` – die Textstelle(n) im Inhalt mit den gefundenen Wörtern, erzeugt mit `ts_headline` (bis zu zwei Fundstellen à 8–15 Wörter, getrennt durch „…“). Treffer werden mit Zeichen aus dem Unicode-Privatbereich markiert und als Liste `{ text, match }` ausgeliefert, nie als HTML. „…“ am Anfang bzw. Ende zeigt, dass der Ausschnitt nicht am Dokumentanfang bzw. -ende liegt. Passt nur der Titel, fehlt `snippet`.
+- **Volltext:** Zeilenumbrüche (Umschalt+Enter) werden beim Extrahieren als Zeilenumbruch übernommen, damit Wörter davor und danach nicht verschmelzen. Bestehende Dokumente erhalten den korrigierten Volltext beim nächsten Speichern.
 
 ```sql
-SELECT id, title, created_at, edited_at, tags, template_id, template_name
+SELECT id, title, created_at, edited_at, tags, template_id, template_name,
+       ts_headline('german', content_text, to_tsquery('german', $1),
+                   'StartSel=…, StopSel=…, MaxFragments=2, MinWords=8, MaxWords=15') AS headline
 FROM documents
 WHERE ($1::text   IS NULL OR search_vector @@ to_tsquery('german', $1))
   AND ($2::text[] IS NULL OR tags && $2)
@@ -796,6 +800,7 @@ Drei Karten untereinander:
 
 - `SearchInput` (300 ms Debounce) und darunter `TagFilterBar` (horizontal, umbrechend, Toggle-Chips, ODER).
 - `InfiniteList` mit `DocumentListItem`: Titel, Erstelldatum, Vorlagenname (bzw. „Leeres Dokument“ / „Vorlage gelöscht“), Tags. Ein Klick öffnet `/documents/:id`.
+- Bei aktiver Suche zeigt jeder Treffer darunter den **Suchausschnitt** (Kap. 5.5) mit hervorgehobenen Suchwörtern, gekürzt auf zwei Zeilen (mobil drei), z. B. „… Die **Kassenprüfung** findet am 15. November statt …“.
 - Leerzustände: „Noch keine Dokumente“ (mit Button „Neues Dokument“) bzw. „Keine Treffer“ (mit „Filter zurücksetzen“).
 - **„Neues Dokument“** öffnet den `NewDocumentDialog`:
   - Liste mit „Leeres Dokument“ als erstem Eintrag, danach alle Vorlagen (Name + Tags).

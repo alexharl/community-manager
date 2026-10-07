@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import JSZip from 'jszip';
+import PizZip from 'pizzip';
 import { describe, expect, it } from 'vitest';
 import { BLANK_DOCX_PATH } from './assets';
 import { docxContentHash, extractText } from './docx';
@@ -49,5 +50,15 @@ describe('docxContentHash', () => {
 describe('extractText', () => {
   it('liest die leere Vorlage ohne Fehler', async () => {
     expect(await extractText(await readFile(BLANK_DOCX_PATH))).toBe('');
+  });
+
+  it('übernimmt Zeilenumbrüche, damit Wörter nicht verschmelzen', async () => {
+    const zip = new PizZip(await readFile(BLANK_DOCX_PATH));
+    const xml = zip.file('word/document.xml')!.asText();
+    const paragraph =
+      '<w:p><w:r><w:t>Anwesend:</w:t><w:br/><w:t>Hans</w:t><w:br/></w:r><w:r><w:t>Peter</w:t></w:r></w:p>';
+    zip.file('word/document.xml', xml.replace('<w:body>', `<w:body>${paragraph}`));
+    const text = await extractText(zip.generate({ type: 'nodebuffer' }));
+    expect(text).toBe('Anwesend:\nHans\nPeter');
   });
 });

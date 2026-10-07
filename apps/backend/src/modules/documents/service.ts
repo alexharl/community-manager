@@ -9,7 +9,7 @@ import type {
   PdfInfo,
 } from '@cm/shared';
 import type { FastifyInstance } from 'fastify';
-import { sql } from 'kysely';
+import { sql, type RawBuilder } from 'kysely';
 import type { z } from 'zod';
 import type { Db } from '../../db/db';
 import { BLANK_DOCX_PATH } from '../../lib/assets';
@@ -21,7 +21,7 @@ import { assertMailAccountExists, mailConfigColumns, toMailConfig } from '../../
 import { fileLocks } from '../onlyoffice/runtime';
 import { documentTitle, fillTemplate } from '../templates/content';
 import { decodeCursor, encodeCursor } from './cursor';
-import { toPrefixTsQuery } from './search';
+import { CONTENT_EDGE_LENGTH, HEADLINE_OPTIONS, toPrefixTsQuery, toSnippet } from './search';
 import {
   docxPath,
   folderPath,
@@ -129,14 +129,28 @@ export async function listDocuments(
   db: Db,
   { q, tags, cursor, limit }: DocumentListQuery,
 ): Promise<Page<DocumentSummary>> {
+  const tsQuery = q ? toPrefixTsQuery(q) : null;
+  // Ohne Suche ist der Ausdruck NULL: ts_headline ist STRICT und wird dann nicht ausgewertet
+  const whenSearching = (expression: RawBuilder<string>) =>
+    sql<string | null>`CASE WHEN ${tsQuery}::text IS NULL THEN NULL ELSE ${expression} END`;
+
   let query = db
     .selectFrom('documents')
     .select(SUMMARY_COLUMNS)
+    // Suchausschnitt mit Treffern; Anfang und Ende des Inhalts für die „…“-Kennzeichnung
+    .select([
+      sql<
+        string | null
+      >`ts_headline('german', content_text, to_tsquery('german', ${tsQuery}), ${HEADLINE_OPTIONS})`.as(
+        'headline',
+      ),
+      whenSearching(sql`left(content_text, ${CONTENT_EDGE_LENGTH})`).as('content_start'),
+      whenSearching(sql`right(content_text, ${CONTENT_EDGE_LENGTH})`).as('content_end'),
+    ])
     .orderBy('created_at', 'desc')
     .orderBy('id', 'desc')
     .limit(limit + 1);
 
-  const tsQuery = q ? toPrefixTsQuery(q) : null;
   if (tsQuery) {
     // Nur Stoppwörter (z. B. „die“) ergeben eine leere Suchanfrage → dann nicht filtern statt nichts finden
     query = query.where(
@@ -158,7 +172,10 @@ export async function listDocuments(
   const items = rows.slice(0, limit);
   const last = items.at(-1);
   return {
-    items: items.map(toSummary),
+    items: items.map((row) => {
+      const snippet = toSnippet(row.headline, row.content_start, row.content_end);
+      return snippet ? { ...toSummary(row), snippet } : toSummary(row);
+    }),
     nextCursor: rows.length > limit && last ? encodeCursor(last.created_at, last.id) : null,
   };
 }

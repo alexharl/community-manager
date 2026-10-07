@@ -4,6 +4,7 @@ import { TagList } from '../../components/chips';
 import { ListItem } from '../../components/ui';
 import { formatDate } from '../../lib/format';
 import { templateLabel } from './labels';
+import { SearchSnippet } from './SearchSnippet';
 
 export function DocumentListItem({ document }: { document: DocumentSummary }) {
   return (
@@ -17,6 +18,7 @@ export function DocumentListItem({ document }: { document: DocumentSummary }) {
           <TagList tags={document.tags} />
         </>
       }
+      detail={document.snippet && <SearchSnippet parts={document.snippet} />}
       meta={formatDate(document.createdAt)}
     />
   );

@@ -1,0 +1,10 @@
+.snippet {
+  white-space: normal;
+}
+
+.match {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: var(--color-highlight);
+  color: var(--color-highlight-text);
+}

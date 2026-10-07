@@ -14,6 +14,17 @@ export interface DocumentSummary {
   createdAt: ISODate;
   /** Bearbeitungsdatum: letzte inhaltliche Änderung. */
   editedAt: ISODate;
+  /**
+   * Nur bei Volltextsuche: Textstelle(n) mit den Treffern (Kap. 5.5).
+   * Fehlt, wenn nur der Titel passt.
+   */
+  snippet?: SnippetPart[];
+}
+
+/** Teil eines Suchausschnitts; `match` = gefundenes Wort (wird hervorgehoben). */
+export interface SnippetPart {
+  text: string;
+  match: boolean;
 }
 
 export interface PdfInfo {
