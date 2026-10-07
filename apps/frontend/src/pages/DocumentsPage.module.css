@@ -1,0 +1,7 @@
+.results {
+  transition: opacity var(--transition);
+}
+
+.results[aria-busy='true'] {
+  opacity: 0.55;
+}

@@ -494,9 +494,10 @@ sequenceDiagram
 
 - **Sortierung [A4]:** `created_at DESC, id DESC`, auch bei aktiver Suche (kein Relevanz-Ranking).
 - **Paginierung:** Keyset statt Offset. `cursor` = base64(`<created_at ISO>|<id>`). Es werden `limit + 1` Zeilen gelesen, um `nextCursor` zu bestimmen.
-- **Tags:** ODER-Verknüpfung über `tags && $tags::text[]`. Zusammen mit der Suche gilt: Suche **UND** (Tag1 **ODER** Tag2 …).
+- **Tags:** ODER-Verknüpfung über `tags && $tags::text[]`. Zusammen mit der Suche gilt: Suche **UND** (Tag1 **ODER** Tag2 …). Mehrere Tags kommen als wiederholter Parameter (`?tags=a&tags=b`), da Tags Kommas enthalten dürfen.
 - **Suchausdruck** (Präfixsuche, damit schon Wortanfänge treffen): Eingabe in Wörter zerlegen, nur Buchstaben und Ziffern behalten (`\p{L}\p{N}`), jedes Wort als `<wort>:*`, verbunden mit `&`.
   Beispiel: `"Vorstand Kasse"` → `vorstand:* & kasse:*` → `to_tsquery('german', …)`. Die Funktion wird mit Vitest getestet.
+- **Stoppwörter:** Besteht die Eingabe nur aus deutschen Stoppwörtern (z. B. „die“), ist die Suchanfrage leer (`numnode = 0`). Dann wird nicht gefiltert, statt nichts zu finden.
 
 ```sql
 SELECT id, title, created_at, edited_at, tags, template_id, template_name
@@ -618,7 +619,7 @@ HTTP-Codes: `400` Validierung, `404` nicht gefunden, `409` fachlicher Konflikt, 
 | `PATCH /templates/:id` | `{ name?, tags?, mail?: { enabled?, accountId?, recipients? } }`. Wird `accountId` gesetzt, wird `mail_account_deleted` wieder `false`. |
 | `DELETE /templates/:id` | löschen |
 | **Dokumente** | |
-| `GET /documents?q=&tags=a,b&cursor=&limit=20` | `{ items: DocumentSummary[], nextCursor }` |
+| `GET /documents?q=&tags=a&tags=b&cursor=&limit=20` | `{ items: DocumentSummary[], nextCursor }` |
 | `POST /documents` | `{ templateId \| null }` → `DocumentDetail` |
 | `GET /documents/:id` | `DocumentDetail` |
 | `PATCH /documents/:id` | `{ title?, tags?, mail?: { enabled?, accountId?, recipients? } }` |

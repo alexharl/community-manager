@@ -7,6 +7,7 @@ import type {
   Page,
   PdfInfo,
 } from '@cm/shared';
+import { sql } from 'kysely';
 import type { z } from 'zod';
 import type { Db } from '../../db/db';
 import { BLANK_DOCX_PATH } from '../../lib/assets';
@@ -16,6 +17,7 @@ import { fileExists, removeFile, writeFileAtomic } from '../../lib/files';
 import { assertMailAccountExists, mailConfigColumns, toMailConfig } from '../../lib/mail-config';
 import { decodeCursor, encodeCursor } from './cursor';
 import { documentLocks } from './runtime';
+import { toPrefixTsQuery } from './search';
 import {
   docxPath,
   folderPath,
@@ -114,9 +116,20 @@ export async function getDocumentFiles(db: Db, id: string) {
   return row;
 }
 
+export interface DocumentListQuery {
+  q?: string;
+  tags: string[];
+  cursor?: string;
+  limit: number;
+}
+
+/**
+ * Dokumentliste (Kap. 5.5): neueste zuerst (A4), Keyset-Paginierung,
+ * Volltextsuche UND (Tag1 ODER Tag2 …).
+ */
 export async function listDocuments(
   db: Db,
-  { cursor, limit }: { cursor?: string; limit: number },
+  { q, tags, cursor, limit }: DocumentListQuery,
 ): Promise<Page<DocumentSummary>> {
   let query = db
     .selectFrom('documents')
@@ -124,6 +137,17 @@ export async function listDocuments(
     .orderBy('created_at', 'desc')
     .orderBy('id', 'desc')
     .limit(limit + 1);
+
+  const tsQuery = q ? toPrefixTsQuery(q) : null;
+  if (tsQuery) {
+    // Nur Stoppwörter (z. B. „die“) ergeben eine leere Suchanfrage → dann nicht filtern statt nichts finden
+    query = query.where(
+      sql<boolean>`(numnode(to_tsquery('german', ${tsQuery})) = 0 OR search_vector @@ to_tsquery('german', ${tsQuery}))`,
+    );
+  }
+  if (tags.length > 0) {
+    query = query.where(sql<boolean>`tags && ${tags}::text[]`);
+  }
 
   if (cursor) {
     const after = decodeCursor(cursor);

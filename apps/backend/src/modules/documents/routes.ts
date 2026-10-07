@@ -18,6 +18,12 @@ import {
 import { docxPath } from './storage';
 
 const ListQuerySchema = z.object({
+  q: z.string().trim().max(200).optional(),
+  // Wiederholter Parameter (?tags=a&tags=b), da Tags Kommas enthalten können
+  tags: z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .transform((value) => (value === undefined ? [] : Array.isArray(value) ? value : [value])),
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });

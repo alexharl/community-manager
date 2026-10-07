@@ -6,7 +6,14 @@ import type {
   EditorMode,
   Page,
 } from '@cm/shared';
-import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
 import type { ResolvedTheme } from '../theme/theme';
 import { api } from './client';
 import { suggestionKeys } from './tags';
@@ -14,15 +21,35 @@ import { suggestionKeys } from './tags';
 export const documentKeys = {
   all: ['documents'] as const,
   lists: ['documents', 'list'] as const,
+  list: (filter: DocumentFilter) =>
+    ['documents', 'list', filter.q, [...filter.tags].sort()] as const,
   detail: (id: string) => ['documents', 'detail', id] as const,
   editorConfig: (id: string, mode: EditorMode, theme: ResolvedTheme) =>
     ['documents', 'editor-config', id, mode, theme] as const,
 };
 
-export function useDocuments() {
-  return useQuery({
-    queryKey: documentKeys.lists,
-    queryFn: () => api<Page<DocumentSummary>>('/documents?limit=50'),
+export interface DocumentFilter {
+  q: string;
+  tags: string[];
+}
+
+const PAGE_SIZE = 20;
+
+/** Dokumentliste seitenweise (Keyset-Cursor), gefiltert nach Suche und Tags (Kap. 7.4.3). */
+export function useDocuments(filter: DocumentFilter) {
+  return useInfiniteQuery({
+    queryKey: documentKeys.list(filter),
+    queryFn: ({ pageParam, signal }) => {
+      const params = new URLSearchParams({ limit: String(PAGE_SIZE) });
+      if (filter.q) params.set('q', filter.q);
+      for (const tag of filter.tags) params.append('tags', tag);
+      if (pageParam) params.set('cursor', pageParam);
+      return api<Page<DocumentSummary>>(`/documents?${params}`, { signal });
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    // Beim Tippen die bisherigen Treffer zeigen, bis die neuen da sind
+    placeholderData: keepPreviousData,
   });
 }
 
