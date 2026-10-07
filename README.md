@@ -116,6 +116,7 @@ docker run --rm -v community-manager_appdata:/data -v "$PWD":/backup alpine \
 
 ## Bekannte Einschränkungen
 
+- **Werbeblocker** können den ONLYOFFICE-Editor am Start hindern (er bleibt beim Laden stehen). Für die App und den Document Server deaktivieren; nach 30 s weist die App selbst darauf hin.
 - **ONLYOFFICE Community Edition:** höchstens 20 gleichzeitige Verbindungen. Die mobilen Editoren sind in dieser Edition nur lesend; deshalb nutzt die App auch auf dem Handy die Desktop-Oberfläche – voll bearbeitbar, aber eng.
 - **Mailtext:** Der Dokumentinhalt wird als einfaches HTML übernommen (Überschriften, Fett/Kursiv, Listen, Tabellen, Bilder). Farben und Schriftgrößen entfallen bewusst; die originalgetreue Fassung ist die angehängte PDF.
 - **Ein Prozess:** Mails werden im Backend-Prozess zugestellt. Wird der Server während eines Versands neu gestartet, gilt dieser als fehlgeschlagen und lässt sich erneut auslösen.
